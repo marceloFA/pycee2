@@ -1,4 +1,4 @@
-.pytest_cache/*
-__pycache__/*
+.pytest_cache/
+__pycache__/
 venv/
-.ipynb_checkpoints/*
+.ipynb_checkpoints/
