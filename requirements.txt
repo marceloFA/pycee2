@@ -1,4 +1,6 @@
 sumy
 html5lib
 beautifulsoup4
+python-slugify
 pytest
+pylint

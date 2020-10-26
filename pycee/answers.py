@@ -5,6 +5,8 @@
 import re
 import requests
 from keyword import kwlist
+from operator import itemgetter
+
 from bs4 import BeautifulSoup
 from difflib import get_close_matches
 from sumy.nlp.tokenizers import Tokenizer
@@ -12,108 +14,99 @@ from sumy.summarizers.luhn import LuhnSummarizer
 from sumy.parsers.plaintext import PlaintextParser
 
 from utils import SINGLE_SPACE_CHAR, COMMA_CHAR
-from utils import DEFAULT_HTML_PARSER, BASE_URL, BUILTINS
+from utils import DEFAULT_HTML_PARSER, BASE_URL, BUILTINS, ANSWER_URL
 
 
-def get_questions(query):
-    ''' docstring later '''
-
-    # TODO: add code to check if page contains captcha,
-    # in this case Stackoverflow is suspecting on us 
-    # and no questions will be retrieve from the page
+def get_answers(query, traceback, offending_line):
+    ''' This coordinate the answer aquisition process.
+        1- First use the query to check stackexchange API for related questions
+        2- then get these questions answers body
+        3- lastly, summarize the answer and make it ready to output to the user.
+    '''
+    question_ids, accepted_answer_ids = get_questions(query)
+    answers_bodies = get_answers_bodies(accepted_answer_ids)
     
-    # get soup the results page
-    page = requests.get(query)
-    soup = BeautifulSoup(page.content, DEFAULT_HTML_PARSER)
-
-    # find anchors on page (these may contain links)
-    links=soup.findAll("a")
-    answers=[]
-    for i in range(len(links)-1):
-        # locate all links
-        if (links[i].has_attr('href')):
-            temp=links[i]['href']
-            # filter out links that do not correspond to answers to question
-            if ("/questions/" in temp) and ("https://" not in temp) and ("tagged" not in temp):
-                answers.append(temp)
+    answers = []
+    for body in answers_bodies:
+        code_position = identify_code(body)
+        tester = replace_code( body, code_position, traceback, offending_line)
+        answer_body = remove_tags(tester)
+        answers.append(answer_body)
     
-    if not answers:
-        print('Stack overflow thought we were a bot (in fact are we?)')
-        print('To temporarily fix this please open the link below on the browser and do the following:')
-        print('1 - Solve the captcha\n2-Close the browser tab\n3- Execute pycee2 again')
-        print(query)
-        print('Anyway, remember to solve this issue, please ;)')
-
     return answers
 
 
-def get_links(answers):
+def get_questions(query):
+    ''' This will ask stackexchange API for questions and
+        return a list of questions urls and 
+        their respective accepted answer urls sorted by vote count.'''
     
-    answer_url = [BASE_URL + link for link in answers]
+    response = requests.get(query)
+    response_json = response.json()
+    question_ids = [question['question_id'] for question in response_json['items']]
     
-    if (len(answer_url) <= 1):
-        print("No Results!")
-        exit()
-
-    return answer_url
-
-def get_post_ids(urls):
-    ''' docstring later '''
-
-    ids=[]
-    # start of line number
-    beg='https://stackoverflow.com/questions/'
-
-    for url in urls:
-        # extract error line
-        error_start_line=url.find(beg) + len(beg)
-        if (error_start_line != -1):
-            url=url[error_start_line:]
-            error_end_line=url.find('/')
-            if (error_end_line != -1):
-                url=url[:error_end_line]
-                ids.append(int(url))
-            else:
-                ids.append(-1)
+    accepted_answer_ids = []
+    for question in response_json['items']:
+        if 'accepted_answer_id' in question:
+            field = str(question['accepted_answer_id'])
+            accepted_answer_ids.append(field)
         else:
-            ids.append(-1)
-    return ids
+            # TODO: if question has no accepted answer, get most voted answer then
+            pass
+
+    return question_ids, accepted_answer_ids
 
 
-def get_votes(link):
-    ''' docstring later'''
+def get_answers_bodies(accepted_answer_ids):
 
-    # get the results page
-    page=requests.get(link)
-    soup=BeautifulSoup(page.content, "html5lib")
-    # find a attributes on page (these may contain links)
-    temp=soup.findAll("div", {"class": "vote"})
-    votes=[]
-    for div in temp:
-        votes.append(int(div.find("span", {"class": "vote-count-post "}).text))
-    return votes
+    answers_bodies = []
+    for id in accepted_answer_ids:
+            answer_response = requests.get(ANSWER_URL.replace('id', id))
+            answer_body = answer_response.json()['items'][0]['body']
+            answers_bodies.append(answer_body)
+    
+    return answers_bodies
 
 
-def get_answers(link):
-    ''' docstring later'''
+############# Summary related code
 
-    page=requests.get(link)
-    soup=BeautifulSoup(page.content, "html5lib")
-    # collect all answers on page
-    answerSections=soup.findAll("div", {"class": "answercell"})
-    # answerText will hold all lines of answers individually
-    answerText=[]
-    # extract lines of answers
-    for sec in answerSections:
-        foo_descendants=sec.descendants
-        for ans in foo_descendants:
-            if ans.name == 'div' and ans.get('class', '') == ['post-text']:
-                for aLine in ans.text.split("\n"):
-                    if aLine.strip() != '':
-                        answerText.append(aLine)
-                        answerText.append('.')
+def parse_summarizer(answer_body):
+    summary = None
+    if len(answer_body.split('\n')) <= 4:
+        summary=answer_body
+    else:
+        tmpSummary=get_summary(answer_body)
+        summary=[]
+        tmpTest=answer_body.replace(". ", '\n')
+        for line in tmpSummary:
+            for sec in tmpTest.split('\n'):
+                if ((sec.lstrip() != '') and (sec.lstrip() in str(line))):
+                    if ("*pre*" in str(line)):
+                        sec=sec.replace("*pre*", EMPTY_STRING)
+                        exists=False
+                        for i in summary:
+                            if (sec == i):
+                                exists=True
+                        if (exists == False):
+                            sec=sec.replace("&gt;",">")
+                            sec=sec.replace("&lt;COMMA_CHAR<")
+                            summary.append(sec)
+                    else:
+                        exists=False
 
-    return answerText
+                        for i in summary:
+                            if str(line) == i:
+                                exists=True
+
+                        if not exists:
+                            new_line=str(line)
+                            new_line=new_line.replace("&gt;",">")
+                            new_line=new_line.replace("&lt;","<")
+                            summary.append(new_line)
+        summary='\n'.join(summary)+'\n'
+    
+    return summary
+
 
 def get_summary(sentences):
     ''' convert sentences to single string -> not good for code '''
@@ -126,21 +119,6 @@ def get_summary(sentences):
     summariser=LuhnSummarizer()
 
     return summariser(parser.document, length)
-
-
-def pretty_printer(summary):
-    ''' not in use at the moment '''
-
-    newSummary=summary
-    while '\n\n' in newSummary:
-        newSummary=newSummary.replace('\n\n', '\n')
-    return newSummary
-
-
-def blank(num):
-    ''' not in use at the moment '''
-    for _ in range(num):
-        print('\n')
 
 
 ############# Answer related code
