@@ -2,4 +2,5 @@ sumy
 html5lib
 python-slugify
 pytest
+httmock
 pylint

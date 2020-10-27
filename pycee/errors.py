@@ -9,17 +9,15 @@ from keyword import kwlist
 from difflib import get_close_matches
 from slugify import slugify
 
-from utils import get_project_root, DATA_TYPES, BUILTINS
-from utils import (
+from pycee.utils import get_project_root, DATA_TYPES, BUILTINS
+from pycee.utils import (
     SINGLE_QUOTE_CHAR, DOUBLE_QUOTE_CHAR,
     SINGLE_SPACE_CHAR, EMPTY_STRING,
     COMMA_CHAR
 )
 
 # Stack Overflow URL for scraping
-api_base_url = 'https://api.stackexchange.com/2.2/search?site=stackoverflow' 
-base_url = "https://stackoverflow.com"
-search_url = "/search?q="
+api_search_url = 'https://api.stackexchange.com/2.2/search?site=stackoverflow'
 
 
 def determine_query(error_info: dict, offending_line:int, packages) -> str:
@@ -224,7 +222,7 @@ def get_tab_error(message):
     return url_for_error(message)
 
 
-def wor(message):
+def get_type_error(message):
     ''' docstring later '''
     # lot to do here
     hint1="the first argument must be callable"
@@ -273,15 +271,12 @@ def extract(message):
 def get_query_params(error_message:str):
     ''' preps the query to include necessary filters and meet URL format '''
 
-    # old "https://stackoverflow.com/search?q=[python]+answers:1..+ModuleNotFoundError:+No+module+named+'kivy'"
-    # new  https://api.stackexchange.com/2.2/search?site=stackoverflow&order=desc&sort=votes&tagged=python&intitle=ModuleNotFoundError:+No+module+named+%27kivy%27
-
     error_message_slug = slugify(error_message, separator='+')
     order = '&order=desc'
     sort = '&sort=votes'
     python_tagged = '&tagged=python'
     intitle = f'&intitle={error_message_slug}'
-    
+
     return order + sort + python_tagged + intitle
 
 
@@ -291,11 +286,8 @@ def get_action_word(search1=None, search2=None) -> Union[None]:
     if not search1 and not search2:
         return None
 
-    try:
-        with open(os.path.join(get_project_root(), "python_tasks.txt"), 'rb') as temp_content:
-            temp_content = temp_content.read().decode('utf-8', errors='ignore').split('\n')
-    except:
-        return None
+    with open(join(get_project_root(), "python_tasks.txt"), 'rb') as temp_content:
+        temp_content = temp_content.read().decode('utf-8', errors='ignore').split('\n')
 
     # action - object - preposition
     content = []
@@ -373,10 +365,10 @@ def search_translate(word: str) -> Union[str, None]:
     return None
 
 
-def url_for_error(query: str) -> str:
-    ''' Sets a valid search url '''
+def url_for_error(error_message: str) -> str:
+    ''' Build a valid search url '''
     
-    return api_base_url + get_query_params(query)
+    return api_search_url + get_query_params(error_message)
 
 
 def get_help(search, packages, datatypes):

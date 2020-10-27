@@ -1,4 +1,5 @@
 from sys import modules
+from os import path
 from pathlib import Path
 from io import StringIO
 import tokenize
@@ -11,13 +12,7 @@ SINGLE_SPACE_CHAR = ' '
 EMPTY_STRING = ''
 COMMA_CHAR = ','
 
-# Stack Overflow URL for scraping
-BASE_URL = "https://stackoverflow.com"
-SEARCH_URL = "/search?q="
-# StackExchange API for getting the selected answer body
-QUESTION_URL = 'https://api.stackexchange.com/2.2/questions/id?site=stackoverflow'
-ANSWER_URL = 'https://api.stackexchange.com/2.2/answers/id?site=stackoverflow&filter=withbody'
-
+ANSWER_URL = 'https://api.stackexchange.com/2.2/answers/<id>?site=stackoverflow&filter=withbody'
 
 # standard python3 datatypes
 DATA_TYPES = ['int', 'float', 'complex', 'bool',

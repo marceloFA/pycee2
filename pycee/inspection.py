@@ -1,12 +1,12 @@
-''' This module will get information from the error source code and the error log itself '''
+''' This module will inspect the error source code and the error log.'''
 import os
 import re
 import sys
 from typing import Union
 
 
-from utils import BUILTINS, EMPTY_STRING
-from utils import get_project_root
+from pycee.utils import BUILTINS, EMPTY_STRING
+from pycee.utils import get_project_root
 project_root = get_project_root()
 
 

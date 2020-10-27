@@ -5,23 +5,21 @@
 import re
 import requests
 from keyword import kwlist
-from operator import itemgetter
 
-from bs4 import BeautifulSoup
 from difflib import get_close_matches
 from sumy.nlp.tokenizers import Tokenizer
 from sumy.summarizers.luhn import LuhnSummarizer
 from sumy.parsers.plaintext import PlaintextParser
 
-from utils import SINGLE_SPACE_CHAR, COMMA_CHAR
-from utils import DEFAULT_HTML_PARSER, BASE_URL, BUILTINS, ANSWER_URL
+from pycee.utils import SINGLE_SPACE_CHAR, COMMA_CHAR, EMPTY_STRING
+from pycee.utils import DEFAULT_HTML_PARSER, BUILTINS, ANSWER_URL
 
 
 def get_answers(query, traceback, offending_line):
-    ''' This coordinate the answer aquisition process.
-        1- First use the query to check stackexchange API for related questions
-        2- then get these questions answers body
-        3- lastly, summarize the answer and make it ready to output to the user.
+    ''' This coordinate the answer aquisition process. It goes like this:
+        1- Use the query to check stackexchange API for related questions;
+        2- Get these questions answers body;
+        3- Summarize the answer and make it ready to output to the user;
     '''
     question_ids, accepted_answer_ids = get_questions(query)
     answers_bodies = get_answers_bodies(accepted_answer_ids)
@@ -37,13 +35,13 @@ def get_answers(query, traceback, offending_line):
 
 
 def get_questions(query):
-    ''' This will ask stackexchange API for questions and
+    ''' This method ask stackexchange API for questions and
         return a list of questions urls and 
         their respective accepted answer urls sorted by vote count.'''
-    
+
     response = requests.get(query)
     response_json = response.json()
-    question_ids = [question['question_id'] for question in response_json['items']]
+    question_ids = [str(question['question_id']) for question in response_json['items']]
     
     accepted_answer_ids = []
     for question in response_json['items']:
@@ -58,17 +56,18 @@ def get_questions(query):
 
 
 def get_answers_bodies(accepted_answer_ids):
-
+    
     answers_bodies = []
+
     for id in accepted_answer_ids:
-            answer_response = requests.get(ANSWER_URL.replace('id', id))
-            answer_body = answer_response.json()['items'][0]['body']
+            response = requests.get(ANSWER_URL.replace('<id>', str(id)))
+            answer_body = response.json()['items'][0]['body']
             answers_bodies.append(answer_body)
     
     return answers_bodies
 
 
-############# Summary related code
+############# Summary
 
 def parse_summarizer(answer_body):
     summary = None
@@ -121,7 +120,7 @@ def get_summary(sentences):
     return summariser(parser.document, length)
 
 
-############# Answer related code
+############# Answer parsing
 
 def identify_code(text):
     ''' retrieve code from the answer body '''

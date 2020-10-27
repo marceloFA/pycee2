@@ -1,15 +1,10 @@
 import requests
 from pydoc import help
 
-from error_info import get_error_info, get_packages
-from code_errors import determine_query
-# TODO: encapsulate the logic inside __main__ to 
-# a new method inside query_stack_api so we can 
-# dry out these coupling imports
+from inspection import get_error_info, get_packages
+from errors import determine_query
 from answers import get_answers
 from sym_table import get_offending_line
-from utils import QUESTION_URL, ANSWER_URL
-from utils import EMPTY_STRING
 
 if __name__ == '__main__':
 
