@@ -23,11 +23,12 @@ def get_offending_line(error_info):
     offending_line = None
     is_syntax_error = error_info['type'] == 'SyntaxError'
     code_lines = error_info['code'].split("\n")
-    error_line = error_info['line']        
+    error_line = error_info['line'] -1
 
     if is_syntax_error:
         uncommented_code = remove_comments_and_docstrings(error_info['code'])
-        #remove newline char TODO: remove this?
+        # TODO: remove this?
+        #remove newline char
         uncommented_code = uncommented_code[:len(uncommented_code)-1]
         offending_line = uncommented_code.splitlines()[-error_line]
     else: 

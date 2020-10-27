@@ -4,19 +4,20 @@ import sys
 from json import load
 from os.path import join
 from typing import List, Union
-from difflib import get_close_matches
 from keyword import kwlist
 
-from utils import get_project_root, DATA_TYPES, BUILTINS
-from utils import (
+from difflib import get_close_matches
+from slugify import slugify
+
+from .utils import get_project_root, DATA_TYPES, BUILTINS
+from .utils import (
     SINGLE_QUOTE_CHAR, DOUBLE_QUOTE_CHAR,
     SINGLE_SPACE_CHAR, EMPTY_STRING,
     COMMA_CHAR
 )
 
 # Stack Overflow URL for scraping
-base_url = "https://stackoverflow.com"
-search_url = "/search?q="
+api_search_url = 'https://api.stackexchange.com/2.2/search?site=stackoverflow'
 
 
 def determine_query(error_info: dict, offending_line:int, packages) -> str:
@@ -27,19 +28,19 @@ def determine_query(error_info: dict, offending_line:int, packages) -> str:
     error_message = error_info['message']
     traceback = error_info['traceback']
 
-    if (error_type == "SyntaxError:"):
+    if error_type == "SyntaxError:":
         query = get_syntax_error(error_message, offending_line)
 
-    elif (error_type == "TabError:"):
+    elif error_type == "TabError:":
         query = get_tab_error(error_message)
 
-    elif (error_type == "IndentationError:"):
-        query = getIndentationError(error_message)
+    elif error_type == "IndentationError:":
+        query = get_indentation_error(error_message)
 
-    elif (error_type == "IndexError:"):
-        query = getIndexError(error_message)
+    elif error_type == "IndexError:":
+        query = get_index_error(error_message)
 
-    elif (error_type == "AttributeError:"):
+    elif error_type == "AttributeError:":
         query = get_attr_err(error_message)
         search = convert(extract(traceback))[1]
         search = search.replace(SINGLE_QUOTE_CHAR, EMPTY_STRING)
@@ -47,7 +48,7 @@ def determine_query(error_info: dict, offending_line:int, packages) -> str:
         if search:
             pydoc_info = get_help(search, packages, DATA_TYPES)
 
-    elif (error_type == "NameError:"):
+    elif error_type == "NameError:":
         query=get_name_error(error_message)
         search=convert(extract(traceback))[0]
         search=check_functions(search)  # originally words
@@ -77,7 +78,7 @@ def get_query(error_message: str, error_type:str):
             end = error_message[start+1:].find(DOUBLE_QUOTE_CHAR)+start+2
             error_message = error_message.replace(error_message[start:end], EMPTY_STRING)
 
-    return base_url + search_url + filter_query(error_message)
+    return url_for_error(error_message)
 
 
 def get_attr_err(message):
@@ -92,27 +93,27 @@ def get_attr_err(message):
     error=error.replace(SINGLE_SPACE_CHAR, "+")
     error=error.replace(SINGLE_QUOTE_CHAR, EMPTY_STRING)
 
-    return url_for_error(filter_query(error))
+    return url_for_error(error)
 
-def getIndentationError(message):
+def get_indentation_error(message):
     ''' docstring later on '''
 
     error_type=message.split(SINGLE_SPACE_CHAR, 1)[0]
     message=message.replace(error_type, EMPTY_STRING)
 
-    return url_for_error(filter_query(message))
+    return url_for_error(message)
 
-def getIndexError(message):
+def get_index_error(message):
     ''' docstring later on '''
 
     to_remove=" cannot be "
     if to_remove in error:
         error=message.replace(to_remove, EMPTY_STRING)
 
-    error=message.replace("IndexError: COMMA_CHARindex error ")
+    error=message.replace("IndexError: ","index error ")
     error=error.replace(SINGLE_SPACE_CHAR, "+")
 
-    return url_for_error(filter_query(error))
+    return url_for_error(error)
 
 def get_name_error(message):
     ''' docstring later on '''
@@ -131,14 +132,14 @@ def get_name_error(message):
             toAdd = get_action_word(variables[0])
 
         if not toAdd:
-            return url_for_error(filter_query("NameError"))
+            return url_for_error("NameError")
 
         query=query + toAdd + ' to ' + variables[0]
-        return url_for_error(filter_query(query))
+        return url_for_error(query)
 
     # generic name error search
     else:
-        return url_for_error(filter_query("NameError"))
+        return url_for_error("NameError")
 
 
 def check_tokens_for_query(possibilities: List) -> str:
@@ -172,7 +173,7 @@ def get_syntax_error(message, offending_line):
     
     odd_count_quote_count=(single + double) % 2 == 1
     if odd_count_quote_count:
-        return url_for_error(filter_query("quotation marks"))
+        return url_for_error("quotation marks")
 
     # unmathcing number of parenthese, brackets or braces error
     opening_brackets = offending_line.count(
@@ -182,7 +183,7 @@ def get_syntax_error(message, offending_line):
     
     unmatching_brackets=opening_brackets != closing_bracket
     if unmatching_brackets:
-        return url_for_error(filter_query("bracket meanings"))
+        return url_for_error("bracket meanings")
 
     # split offendingline and remove symbols
     # what does this matches?
@@ -211,17 +212,17 @@ def get_syntax_error(message, offending_line):
             possibilites.extend(possible)
 
     query=check_tokens_for_query(possibilites)
-    return url_for_error(filter_query(query))
+    return url_for_error(query)
 
 
 def get_tab_error(message):
     ''' docstring later '''
     error_type=message.split(SINGLE_SPACE_CHAR, 1)[0]
     message=message.remove(error_type, EMPTY_STRING)
-    return url_for_error(filter_query(message))
+    return url_for_error(message)
 
 
-def wor(message):
+def get_type_error(message):
     ''' docstring later '''
     # lot to do here
     hint1="the first argument must be callable"
@@ -229,13 +230,13 @@ def wor(message):
     error_type=message.split(SINGLE_SPACE_CHAR, 1)[0]
 
     if hint1 in message:
-        return url_for_error(filter_query("must have first callable argument"))
+        return url_for_error("must have first callable argument")
     elif hint2 in message:
         message=message.remove(error_type, EMPTY_STRING)
-        return url_for_error(filter_query(message))
+        return url_for_error(message)
     else:
         # generic search
-        return url_for_error(filter_query(message))
+        return url_for_error(message)
 
 
 #### Helpers
@@ -267,18 +268,17 @@ def extract(message):
         message=message.replace(message[start:end], '')
     return variables
 
-
-def filter_query(query):
+def get_query_params(error_message:str):
     ''' preps the query to include necessary filters and meet URL format '''
 
-    # ensure questsions have at least one answer
-    query = "answers:1.. " + query
+    error_message_slug = slugify(error_message, separator='+')
+    order = '&order=desc'
+    sort = '&sort=votes'
+    python_tagged = '&tagged=python'
+    intitle = f'&intitle={error_message_slug}'
 
-    if ("python" not in query):
-        query = "[python] " + query
+    return order + sort + python_tagged + intitle
 
-    query = query.replace(SINGLE_SPACE_CHAR, "+")
-    return query
 
 def get_action_word(search1=None, search2=None) -> Union[None]:
     ''' Returns action word associated with input '''
@@ -286,11 +286,8 @@ def get_action_word(search1=None, search2=None) -> Union[None]:
     if not search1 and not search2:
         return None
 
-    try:
-        with open(os.path.join(get_project_root(), "python_tasks.txt"), 'rb') as temp_content:
-            temp_content = temp_content.read().decode('utf-8', errors='ignore').split('\n')
-    except:
-        return None
+    with open(join(get_project_root(), "python_tasks.txt"), 'rb') as temp_content:
+        temp_content = temp_content.read().decode('utf-8', errors='ignore').split('\n')
 
     # action - object - preposition
     content = []
@@ -368,10 +365,10 @@ def search_translate(word: str) -> Union[str, None]:
     return None
 
 
-def url_for_error(query: str) -> str:
-    ''' Sets a valid search url '''
-    return base_url + search_url + query
-
+def url_for_error(error_message: str) -> str:
+    ''' Build a valid search url '''
+    
+    return api_search_url + get_query_params(error_message)
 
 
 def get_help(search, packages, datatypes):
