@@ -9,8 +9,8 @@ from keyword import kwlist
 from difflib import get_close_matches
 from slugify import slugify
 
-from pycee.utils import get_project_root, DATA_TYPES, BUILTINS
-from pycee.utils import (
+from .utils import get_project_root, DATA_TYPES, BUILTINS
+from .utils import (
     SINGLE_QUOTE_CHAR, DOUBLE_QUOTE_CHAR,
     SINGLE_SPACE_CHAR, EMPTY_STRING,
     COMMA_CHAR

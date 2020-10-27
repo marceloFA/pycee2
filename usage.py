@@ -1,13 +1,9 @@
-import requests
-from pydoc import help
-
-from inspection import get_error_info, get_packages
-from errors import determine_query
-from answers import get_answers
-from sym_table import get_offending_line
+from pycee.answers import get_answers
+from pycee.errors import determine_query
+from pycee.inspection import get_error_info, get_packages
+from pycee.sym_table import get_offending_line
 
 if __name__ == '__main__':
-
     error_info = get_error_info()
     offending_line = get_offending_line(error_info)
     packages = get_packages(error_info['code'])
@@ -15,7 +11,7 @@ if __name__ == '__main__':
     answers = get_answers(query, error_info['traceback'], offending_line)
     
     for i, answer in enumerate(answers):
-        print(f'\n\nSolution {i}:')
+        print(f'Solution {i}:')
         print(answer)
     
     # TODO: fix pydocs information, currently not working.

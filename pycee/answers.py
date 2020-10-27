@@ -11,8 +11,8 @@ from sumy.nlp.tokenizers import Tokenizer
 from sumy.summarizers.luhn import LuhnSummarizer
 from sumy.parsers.plaintext import PlaintextParser
 
-from pycee.utils import SINGLE_SPACE_CHAR, COMMA_CHAR, EMPTY_STRING
-from pycee.utils import DEFAULT_HTML_PARSER, BUILTINS, ANSWER_URL
+from .utils import SINGLE_SPACE_CHAR, COMMA_CHAR, EMPTY_STRING
+from .utils import DEFAULT_HTML_PARSER, BUILTINS, ANSWER_URL
 
 
 def get_answers(query, traceback, offending_line):

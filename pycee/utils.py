@@ -1,8 +1,5 @@
 from sys import modules
-from os import path
 from pathlib import Path
-from io import StringIO
-import tokenize
 
 # These are some constants we use throughout the codebase
 DEFAULT_HTML_PARSER = 'html5lib'
