@@ -5,3 +5,5 @@ venv/
 .ipynb_checkpoints/
 tests/__pycache__/
 pycee2.egg-info/
+output.txt
+.tool-versions
