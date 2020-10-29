@@ -9,9 +9,12 @@ SINGLE_SPACE_CHAR = " "
 EMPTY_STRING = ""
 COMMA_CHAR = ","
 
-ANSWER_URL = (
-    "https://api.stackexchange.com/2.2/answers/<id>?site=stackoverflow&filter=withbody"
-)
+BASE_URL = "https://api.stackexchange.com/2.2"
+
+
+ANSWER_URL = BASE_URL + "/answers/<id>?site=stackoverflow&filter=withbody"
+
+QUESTION_ANSWERS_URL = BASE_URL + "/questions/<id>/answers?site=stackoverflow&filter=withbody"
 
 # standard python3 datatypes
 DATA_TYPES = [
