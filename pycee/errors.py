@@ -1,4 +1,4 @@
-''' This module contains all the logic that hadles code errors '''
+""" Contains all the logic that handles code errors """
 import re
 import sys
 from json import load
@@ -11,130 +11,122 @@ from slugify import slugify
 
 from .utils import get_project_root, DATA_TYPES, BUILTINS
 from .utils import (
-    SINGLE_QUOTE_CHAR, DOUBLE_QUOTE_CHAR,
-    SINGLE_SPACE_CHAR, EMPTY_STRING,
-    COMMA_CHAR
+    SINGLE_QUOTE_CHAR,
+    DOUBLE_QUOTE_CHAR,
+    SINGLE_SPACE_CHAR,
+    EMPTY_STRING,
 )
 
 # Stack Overflow URL for scraping
-api_search_url = 'https://api.stackexchange.com/2.2/search?site=stackoverflow'
+API_SEARCH_URL = "https://api.stackexchange.com/2.2/search?site=stackoverflow"
 
 
-def determine_query(error_info: dict, offending_line:int, packages) -> str:
-    ''' choose the correct query to run based on the error type '''
-    
+def determine_query(error_info: dict, offending_line: int, packages) -> str:
+    """ choose the correct query to run based on the error type """
+
     pydoc_info = None
-    error_type = error_info['type']
-    error_message = error_info['message']
-    traceback = error_info['traceback']
+    error_type = error_info["type"]
+    error_message = error_info["message"]
+    traceback = error_info["traceback"]
 
-    if error_type == "SyntaxError:":
-        query = get_syntax_error(error_message, offending_line)
+    if error_type == "SyntaxError":
+        query = handle_syntax_error(error_message, offending_line)
 
-    elif error_type == "TabError:":
-        query = get_tab_error(error_message)
+    elif error_type == "TabError":
+        query = handle_tab_error(error_message)
 
-    elif error_type == "IndentationError:":
-        query = get_indentation_error(error_message)
+    elif error_type == "IndentationError":
+        query = handle_indentation_error(error_message)
 
-    elif error_type == "IndexError:":
-        query = get_index_error(error_message)
+    elif error_type == "IndexError":
+        query = handle_index_error(error_message)
 
-    elif error_type == "AttributeError:":
-        query = get_attr_err(error_message)
-        search = convert(extract(traceback))[1]
-        search = search.replace(SINGLE_QUOTE_CHAR, EMPTY_STRING)
-        search = check_functions(search)  # originally words
+    elif error_type == "AttributeError":
+        query = handle_attr_error(error_message)
+        search = convert(extract_quoted_words(traceback))[1]
         if search:
             pydoc_info = get_help(search, packages, DATA_TYPES)
 
-    elif error_type == "NameError:":
-        query=get_name_error(error_message)
-        search=convert(extract(traceback))[0]
-        search=check_functions(search)  # originally words
+    elif error_type == "KeyError":
+        query = handle_key_error(error_message)
+
+    elif error_type == "NameError":
+        query = handle_name_error(error_message)
+        search = convert(extract_quoted_words(traceback))[0]
         if search:
             pydoc_info = get_help(search, packages, DATA_TYPES)
+
     else:
-        # default query
-        query=get_query(error_message, error_type)
-    
+        query = url_for_error(error_message)  # default query
+
     return query, pydoc_info
 
 
-def get_query(error_message: str, error_type:str):
-    ''' Generates the url for the query '''
-    
-    # remove quotation marks for specific errors
-    if error_type == "KeyError":
+def handle_key_error(error_message: str) -> str:
+    """ refactor this, please """
 
-        # check for quotation marks which will contain code specific data for specific error
-        while SINGLE_QUOTE_CHAR in error_message:
-            start = error_message.find(SINGLE_QUOTE_CHAR)
-            end = error_message[start+1:].find(SINGLE_QUOTE_CHAR)+start+2
-            error_message = error_message.replace(error_message[start:end], EMPTY_STRING)
+    # check for quotation marks which will contain code specific data for specific error
+    while SINGLE_QUOTE_CHAR in error_message:
+        start = error_message.find(SINGLE_QUOTE_CHAR)
+        end = error_message[start + 1 :].find(SINGLE_QUOTE_CHAR) + start + 2
+        error_message = error_message.replace(error_message[start:end], EMPTY_STRING)
 
-        while DOUBLE_QUOTE_CHAR in error_message:
-            start = error_message.find(DOUBLE_QUOTE_CHAR)
-            end = error_message[start+1:].find(DOUBLE_QUOTE_CHAR)+start+2
-            error_message = error_message.replace(error_message[start:end], EMPTY_STRING)
+    while DOUBLE_QUOTE_CHAR in error_message:
+        start = error_message.find(DOUBLE_QUOTE_CHAR)
+        end = error_message[start + 1 :].find(DOUBLE_QUOTE_CHAR) + start + 2
+        error_message = error_message.replace(error_message[start:end], EMPTY_STRING)
 
     return url_for_error(error_message)
 
 
-def get_attr_err(message):
-    ''' docstring later on '''
+def handle_attr_error(error_message):
+    """ docstring later on """
 
-    variables=convert(extract(message))
-    error=''
-
-    for var in variables:
-        error=error + SINGLE_SPACE_CHAR + var
-
-    error=error.replace(SINGLE_SPACE_CHAR, "+")
-    error=error.replace(SINGLE_QUOTE_CHAR, EMPTY_STRING)
-
+    quoted_words = convert(extract_quoted_words(error_message))
+    error = " ".join(quoted_words)
+    error = slugify(error, separator="+")
     return url_for_error(error)
 
-def get_indentation_error(message):
-    ''' docstring later on '''
 
-    error_type=message.split(SINGLE_SPACE_CHAR, 1)[0]
-    message=message.replace(error_type, EMPTY_STRING)
-
+def handle_indentation_error(error_message):
+    """ Process an IndentationError """
+    message = remove_exception_from_error_message(error_message)
     return url_for_error(message)
 
-def get_index_error(message):
-    ''' docstring later on '''
 
-    to_remove=" cannot be "
+def handle_index_error(message):
+    """ docstring later on """
+
+    to_remove = " cannot be "
     if to_remove in error:
-        error=message.replace(to_remove, EMPTY_STRING)
+        error = message.replace(to_remove, EMPTY_STRING)
 
-    error=message.replace("IndexError: ","index error ")
-    error=error.replace(SINGLE_SPACE_CHAR, "+")
+    error = message.replace("IndexError:", "index error")
+    error = slugify(message, separator="+")
 
     return url_for_error(error)
 
-def get_name_error(message):
-    ''' docstring later on '''
 
-    variables=[]
-    query=''
+def handle_name_error(message):
+    """ docstring later on """
+
+    variables = []
+    query = ""
 
     if SINGLE_QUOTE_CHAR in message:
 
-        variables=convert(extract(message))
-        toAdd=None
+        variables = convert(extract_quoted_words(message))
+        to_add = None
 
         if len(variables) > 1:
-            toAdd = get_action_word(variables[0], variables[1])
+            to_add = get_action_word(variables[0], variables[1])
         else:
-            toAdd = get_action_word(variables[0])
+            to_add = get_action_word(variables[0])
 
-        if not toAdd:
+        if not to_add:
             return url_for_error("NameError")
 
-        query=query + toAdd + ' to ' + variables[0]
+        query = query + to_add + " to " + variables[0]
         return url_for_error(query)
 
     # generic name error search
@@ -142,152 +134,136 @@ def get_name_error(message):
         return url_for_error("NameError")
 
 
-def check_tokens_for_query(possibilities: List) -> str:
-    ''' This will check SyntaxError tokens
-        and return the apropriate query
-    '''
-
-    for word in possibilities:
-        if word == 'for':
-            return "for loop"
-        elif word == 'while':
-            return "while loop"
-        elif word == 'if' or word == 'else':
-            "else if syntax"
-        elif word == 'def':
-            isDef=True
-        elif (isDef):
-            # TODO: implement this correctly
-            return "SyntaxError: invalid syntax"
-        else:
-            # Generic syntax error
-            return "SyntaxError: invalid syntax"
-
-
-def get_syntax_error(message, offending_line):
-    ''' docstring later on '''
+def handle_syntax_error(offending_line):
+    """ docstring later on """
 
     # unmathcing number of quotation marks error
     single = offending_line.count(SINGLE_QUOTE_CHAR)
     double = offending_line.count(DOUBLE_QUOTE_CHAR)
-    
-    odd_count_quote_count=(single + double) % 2 == 1
-    if odd_count_quote_count:
+
+    if (single + double) % 2 == 1:
         return url_for_error("quotation marks")
 
     # unmathcing number of parenthese, brackets or braces error
-    opening_brackets = offending_line.count(
-        "(") + offending_line.count("[") + offending_line.count("{")
-    closing_bracket = offending_line.count(
-        ")") + offending_line.count("]") + offending_line.count("}")
-    
-    unmatching_brackets=opening_brackets != closing_bracket
-    if unmatching_brackets:
+    opening_brackets = (
+        offending_line.count("(")
+        + offending_line.count("[")
+        + offending_line.count("{")
+    )
+    closing_bracket = (
+        offending_line.count(")")
+        + offending_line.count("]")
+        + offending_line.count("}")
+    )
+
+    if opening_brackets != closing_bracket:
         return url_for_error("bracket meanings")
 
     # split offendingline and remove symbols
     # what does this matches?
-    regex=r'[!@#$%^&*_\-+=\(\)\[\]\{\}\\|~`/?.,<>:; ]'
-    tokens=re.split(regex, offending_line)
+    regex = r"[!@#$%^&*_\-+=\(\)\[\]\{\}\\|~`/?.,<>:; ]"
+    tokens = re.split(regex, offending_line)
     # remove strings/quotes
     for token in tokens:
         if (SINGLE_QUOTE_CHAR in token) or (DOUBLE_QUOTE_CHAR in token):
             tokens.remove(token)
     # then find possibilites for each word
-    possibilites=[]
+    possibilites = []
     for token in tokens:
-        possible=[]
-        possible.extend(get_close_matches(
-            token.lower(), kwlist, 3, 0.6))
-        possible.extend(get_close_matches(
-            token.lower(), BUILTINS, 3, 0.6))
+        possible = []
+        possible.extend(get_close_matches(token.lower(), kwlist, 3, 0.6))
+        possible.extend(get_close_matches(token.lower(), BUILTINS, 3, 0.6))
 
         # if exact match, only keep that word
-        flag=False
+        flag = False
         for word in possible:
             if word == token:
                 possibilites.append(word)
-                flag=True
+                flag = True
         if not flag:
             possibilites.extend(possible)
 
-    query=check_tokens_for_query(possibilites)
+    query = check_tokens_for_query(possibilites)
     return url_for_error(query)
 
 
-def get_tab_error(message):
-    ''' docstring later '''
-    error_type=message.split(SINGLE_SPACE_CHAR, 1)[0]
-    message=message.remove(error_type, EMPTY_STRING)
+def handle_tab_error(error_message):
+    """ Process an TabError """
+    message = remove_exception_from_error_message(error_message)
     return url_for_error(message)
 
 
-def get_type_error(message):
-    ''' docstring later '''
-    # lot to do here
-    hint1="the first argument must be callable"
-    hint2="not all arguments converted during string formatting"
-    error_type=message.split(SINGLE_SPACE_CHAR, 1)[0]
+def handle_type_error(error_message):
+    """ Process an TypeError """
 
-    if hint1 in message:
+    hint1 = "the first argument must be callable"
+    hint2 = "not all arguments converted during string formatting"
+
+    if hint1 in error_message:
         return url_for_error("must have first callable argument")
     elif hint2 in message:
-        message=message.remove(error_type, EMPTY_STRING)
+        message = remove_exception_from_error_message(error_message)
         return url_for_error(message)
     else:
         # generic search
-        return url_for_error(message)
+        return url_for_error(error_message)
 
 
 #### Helpers
 
-def convert(temp_variables):
-    ''' docstring later '''
 
-    variables=[]
+def check_tokens_for_query(tokens: List) -> str:
+    """  Check SyntaxError tokens to determine an apropriate query """
 
-    for var in temp_variables:
-        # originally functions
-        new_word = check_functions(var.lower())
-        if new_word:
-            variables.append(new_word)
-        else:
-            variables.append(var)
+    if "for" in tokens:
+        return "for loop"
+    elif "while" in tokens:
+        return "while loop"
+    elif "if" in tokens or "else" in tokens:
+        return "if else syntax"
+    elif "def" in tokens:
+        return "function definition"
+    else:
+        return "SyntaxError: invalid syntax"
 
-    return variables
 
-def extract(message):
-    ''' docstring later'''
-    variables=[]
+def convert(quoted_words: List[str]) -> List[str]:
+    """take some quoted words on the error message
+    and try to translate then.
+    """
+    translated_words = [search_translate(w) for w in quoted_words]
+    return translated_words
 
-    while SINGLE_QUOTE_CHAR in message:
-        start=message.find(SINGLE_QUOTE_CHAR)
-        end=message[start+1:].find(SINGLE_QUOTE_CHAR)+start+2
-        word=message[start:end]
-        variables.append(word)
-        message=message.replace(message[start:end], '')
-    return variables
 
-def get_query_params(error_message:str):
-    ''' preps the query to include necessary filters and meet URL format '''
+def extract_quoted_words(error_message: str) -> List[str]:
+    """This method will extract words surrounded by single quotes.
+    Example:
+    input: "AttributeError: 'int' object has no attribute 'append'"
+    output: ['int', 'append']
+    """
+    return error_message.split(SINGLE_QUOTE_CHAR)[1::2]
 
-    error_message_slug = slugify(error_message, separator='+')
-    order = '&order=desc'
-    sort = '&sort=votes'
-    python_tagged = '&tagged=python'
-    intitle = f'&intitle={error_message_slug}'
+
+def get_query_params(error_message: str):
+    """ preps the query to include necessary filters and meet URL format """
+
+    error_message_slug = slugify(error_message, separator="+")
+    order = "&order=desc"
+    sort = "&sort=votes"
+    python_tagged = "&tagged=python"
+    intitle = f"&intitle={error_message_slug}"
 
     return order + sort + python_tagged + intitle
 
 
 def get_action_word(search1=None, search2=None) -> Union[None]:
-    ''' Returns action word associated with input '''
+    """ Returns action word associated with input """
 
     if not search1 and not search2:
         return None
 
-    with open(join(get_project_root(), "python_tasks.txt"), 'rb') as temp_content:
-        temp_content = temp_content.read().decode('utf-8', errors='ignore').split('\n')
+    with open(join(get_project_root(), "python_tasks.txt"), "rb") as temp_content:
+        temp_content = temp_content.read().decode("utf-8", errors="ignore").split("\n")
 
     # action - object - preposition
     content = []
@@ -304,20 +280,19 @@ def get_action_word(search1=None, search2=None) -> Union[None]:
     counter = []
     actions = []
 
-    for line in content[1:len(content)-1]:
-        c1 = not search1 and search2 in line[2]
-        c2 = not search2 and search1 in line[1]
-        c4 = search1 and search2
-        c5 = search1 in line[1] and search2 in line[2]
-        c3 = c4 and c5
+    for line in content[1 : len(content) - 1]:
+        c_1 = not search1 and search2 in line[2]
+        c_2 = not search2 and search1 in line[1]
+        c_4 = search1 and search2
+        c_5 = search1 in line[1] and search2 in line[2]
+        c_3 = c_4 and c_5
 
-        if c1 or c2 or c3:
-            if (line[0] not in actions):
+        if c_1 or c_2 or c_3:
+            if line[0] not in actions:
                 actions.append(line[0])
                 counter.append(1)
             else:
-                counter[actions.index(
-                    line[0])] = counter[actions.index(line[0])] + 1
+                counter[actions.index(line[0])] = counter[actions.index(line[0])] + 1
 
     if not counter:
         return None
@@ -325,57 +300,61 @@ def get_action_word(search1=None, search2=None) -> Union[None]:
     # return the max found amongst results
     return actions[counter.index(max(counter))]
 
-def check_functions(word:str):
 
-    word=word.lstrip().lower()
-    word=word.replace(SINGLE_QUOTE_CHAR, EMPTY_STRING)
-    return search_translate(word)
-
-
-def search_translate(word: str) -> Union[str, None]:
-    ''' Searches data from website or data types '''
+def search_translate(word: str) -> str:
+    """Try to get a more readable translation of a programming term.
+    Else try to look up for a translation on the syntax_across_languages file.
+    If both tries fails then return the unchanged word.
+    """
 
     # syntax from http://rigaux.org/language-study/syntax-across-languages.html#StrngCSTSSASn
     # first entry is python, rest are other langauges
-    with open(join(get_project_root(), 'syntax_across_languages.json'), 'r') as file:
+    with open(join(get_project_root(), "syntax_across_languages.json"), "r") as file:
         syntax_across_languages = load(file)
 
-    word = word.lower()
+    word = word.lstrip().lower()
+    word = word.replace(SINGLE_QUOTE_CHAR, EMPTY_STRING)
     readable_DATA_TYPES = [
-        'integer', 'float', 'complex',
-        'boolean', 'string', 'bytes',
-        'list', 'tuple', 'set', 'dictionary'
+        "integer",
+        "float",
+        "complex",
+        "boolean",
+        "string",
+        "bytes",
+        "list",
+        "tuple",
+        "set",
+        "dictionary",
     ]
 
     if word in DATA_TYPES:
-            return readable_DATA_TYPES[DATA_TYPES.index(word)]
+        return readable_DATA_TYPES[DATA_TYPES.index(word)]
 
-    if syntax_across_languages:
-        # search through provided list
-        for lst in syntax_across_languages:
-            if word in lst:
-                return lst[0]
+    # search through provided list
+    for syntax in syntax_across_languages:
+        if word in syntax:
+            return syntax[0]
 
-        # if no match, find containing
-        for lst in syntax_across_languages:
-            for l in lst:
-                if word in l:
-                    return lst[0]
+    # if no match, find containing
+    for syntax in syntax_across_languages:
+        for elm in syntax:
+            if word in elm:
+                return syntax[0]
 
-    return None
+    return word
 
 
 def url_for_error(error_message: str) -> str:
-    ''' Build a valid search url '''
-    
-    return api_search_url + get_query_params(error_message)
+    """ Build a valid search url """
+
+    return API_SEARCH_URL + get_query_params(error_message)
 
 
 def get_help(search, packages, datatypes):
-    ''' gets help from the Python help() '''
+    """ gets help from the Python help() """
 
     changed = False
-    path = 'output.txt'
+    path = "output.txt"
     lines = help_to_list(path, search)
 
     if "No Python documentation found for" in lines[0]:
@@ -387,7 +366,7 @@ def get_help(search, packages, datatypes):
         for pckg_name in packages:
             try:
                 pckg = importlib.import_module(pckg_name)
-                search_query = pckg.__name__+'.' + search
+                search_query = pckg.__name__ + "." + search
                 lines = help_to_list(path, search_query)
                 if not lines:
                     break
@@ -396,7 +375,7 @@ def get_help(search, packages, datatypes):
 
         if not lines:
             for types in datatypes:
-                search_query = types + '.' + search
+                search_query = types + "." + search
                 lines = help_to_list(path, search_query)
                 if lines:
                     break
@@ -413,38 +392,47 @@ def get_help(search, packages, datatypes):
 
 
 def help_to_list(path, search):
-    ''' Converts the help() format to an easy to use list '''
+    """ Converts the help() format to an easy to use list """
 
-    with open(path, "w") as f:
+    with open(path, "w") as file:
         sys.__stdout__ = sys.stdout
-        sys.stdout = f
+        sys.stdout = file
         help(search)
 
     sys.stdout = sys.__stdout__
 
-    with open(path) as f:
-        lines = f.read().splitlines()
+    with open(path) as file2:
+        lines = file2.read().splitlines()
 
     return lines if lines else None
 
 
 def help_to_code(search, lines):
-    ''' Extracts the code from a list of help() data '''
+    """ Extracts the code from a list of help() data """
     res = []
 
-    if (len(lines) <= 2):
+    if len(lines) <= 2:
         return res
 
-    if 'class ' + search in lines[2]:
+    if "class " + search in lines[2]:
         i = 3
         while lines[i].strip(" |"):
             res.append(lines[i].strip(" |"))
             i += 1
 
-    elif search + ' = ' in lines[2]:
+    elif search + " = " in lines[2]:
         res.append(lines[3].strip(" |"))
 
     if len(res) and not res[0]:
         del res[0]
 
     return res
+
+
+def remove_exception_from_error_message(error_message: str) -> str:
+    """Removes the exception error from the error message.
+    Example:
+    input: "AttributeError: 'int' object has no attribute 'append'"
+    output: "'int' object has no attribute 'append'"
+    """
+    return error_message.split(SINGLE_SPACE_CHAR, 1)[1]
