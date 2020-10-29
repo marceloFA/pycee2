@@ -1,5 +1,5 @@
 # Pycee 2 (WIP)
-This is a refactored version of [pycee])(https://github.com/EmillieT/Pycee).
+This is a refactored version of [pycee](https://github.com/EmillieT/Pycee).
 Pycee 2 is a tool that provides enhanced error messages for Python code.
 
 
