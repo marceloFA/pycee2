@@ -152,8 +152,7 @@ def get_packages(code: str) -> defaultdict:
     input:
     'from collections import Counter\n
      import kivy\n
-     from stats import median as stats_median
-     \nc = Counter()\n'
+     from stats import median as stats_median\n'
 
     output:
     defaultdict(<class 'list'>,

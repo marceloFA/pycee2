@@ -5,6 +5,7 @@
 import re
 import requests
 from keyword import kwlist
+from typing import List
 
 from difflib import get_close_matches
 from sumy.nlp.tokenizers import Tokenizer
@@ -12,20 +13,23 @@ from sumy.summarizers.luhn import LuhnSummarizer
 from sumy.parsers.plaintext import PlaintextParser
 
 from .utils import SINGLE_SPACE_CHAR, COMMA_CHAR, EMPTY_STRING
-from .utils import DEFAULT_HTML_PARSER, BUILTINS, ANSWER_URL
+from .utils import DEFAULT_HTML_PARSER, BUILTINS, ANSWER_URL, QUESTION_ANSWERS_URL
 
 
 def get_answers(query, traceback, offending_line):
     """This coordinate the answer aquisition process. It goes like this:
     1- Use the query to check stackexchange API for related questions;
-    2- Get these questions answers body;
-    3- Summarize the answer and make it ready to output to the user;
+    2.1- Get answers from questions with accepted answers;
+    2.1- Get mot voted answers from questions without accepted answers;
+    3- Summarize the answers and make it ready to output to the user;
     """
-    question_ids, accepted_answer_ids = get_questions(query)
-    answers_bodies = get_answers_bodies(accepted_answer_ids)
+    questions_ids, accepted_answer_ids = get_questions(query)
+    accepted_answers_bodies = get_accepted_answers(accepted_answer_ids)
+    other_answers_bodies = get_most_voted_answers(questions_ids)
+
 
     answers = []
-    for body in answers_bodies:
+    for body in accepted_answers_bodies + other_answers_bodies:
         code_position = identify_code(body)
         tester = replace_code(body, code_position, traceback, offending_line)
         answer_body = remove_tags(tester)
@@ -35,34 +39,36 @@ def get_answers(query, traceback, offending_line):
 
 
 def get_questions(query):
-    """This method ask stackexchange API for questions and
-    return a list of questions urls and
-    their respective accepted answer urls sorted by vote count."""
+    """This method ask stackexchange API for questions.
+    It then return the answers ids for questions with an accepted answer
+    and questions ids for questions with no accepted answer.
+    Sorted by vote count."""
 
     response = requests.get(query)
     response_json = response.json()
-    from pprint import pprint
-    pprint(response_json)
-    exit()
-    question_ids = [str(question["question_id"]) for question in response_json["items"]]
+    #question_ids = [str(question["question_id"]) for question in response_json["items"]]
 
     accepted_answer_ids = []
+    question_ids = []
     for question in response_json["items"]:
-        
-        if "accepted_answer_id" in question:
+
+        if not question["is_answered"]:
+            pass
+        elif "accepted_answer_id" in question:
             field = str(question["accepted_answer_id"])
             accepted_answer_ids.append(field)
         else:
-            # TODO: if question has no accepted answer, get most voted answer then
-            pass
+            # if question has no accepted answer, get most voted answer later
+            field = str(question["question_id"])
+            question_ids.append(field)
 
     return question_ids, accepted_answer_ids
 
 
-def get_answers_bodies(accepted_answer_ids):
+def get_accepted_answers(accepted_answer_ids: List[str]) -> List[str]:
+    ''' Take an accepted answer id and return the body of it '''
 
     answers_bodies = []
-
     for id in accepted_answer_ids:
         response = requests.get(ANSWER_URL.replace("<id>", str(id)))
         answer_body = response.json()["items"][0]["body"]
@@ -71,8 +77,25 @@ def get_answers_bodies(accepted_answer_ids):
     return answers_bodies
 
 
-# Summary
+def get_most_voted_answers(questions_ids: List[str]) -> List[str]:
+    ''' Take an accepted answer id and return the body of it.
+        As we want only the most voted answer, we can order by vote count
+        and limit ansers by one.
+    '''
+    page_size = '&pagesize=1'
+    order  = '&order=desc'
+    url = QUESTION_ANSWERS_URL + page_size + order
+    
+    answers_bodies = []
+    for id in questions_ids:
+        response = requests.get(url.replace("<id>", str(id)))
+        answer_body = response.json()["items"][0]["body"]
+        answers_bodies.append(answer_body)
+    return answers_bodies
 
+
+
+# Method to summary an answer body and remove html tags and formating
 
 def parse_summarizer(answer_body):
     summary = None
