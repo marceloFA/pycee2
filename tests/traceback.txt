@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "error_code.py", line 2, in <module>
-    import kivy
-ModuleNotFoundError: No module named 'kivy'
