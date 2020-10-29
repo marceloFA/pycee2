@@ -1,6 +1,9 @@
+requests
 sumy
 html5lib
+pyminifier
 python-slugify
 pytest
 httmock
 pylint
+
