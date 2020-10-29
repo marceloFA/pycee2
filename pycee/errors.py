@@ -3,11 +3,13 @@ import re
 import sys
 from json import load
 from os.path import join
-from typing import List, Union
 from keyword import kwlist
+from typing import List, Union
+from collections import defaultdict
+from importlib import import_module
 
-from difflib import get_close_matches
 from slugify import slugify
+from difflib import get_close_matches
 
 from .utils import get_project_root, DATA_TYPES, BUILTINS
 from .utils import (
@@ -21,7 +23,9 @@ from .utils import (
 API_SEARCH_URL = "https://api.stackexchange.com/2.2/search?site=stackoverflow"
 
 
-def determine_query(error_info: dict, offending_line: int, packages) -> str:
+def determine_query(
+    error_info: dict, offending_line: int, packages: defaultdict
+) -> str:
     """ choose the correct query to run based on the error type """
 
     pydoc_info = None
@@ -30,7 +34,7 @@ def determine_query(error_info: dict, offending_line: int, packages) -> str:
     traceback = error_info["traceback"]
 
     if error_type == "SyntaxError":
-        query = handle_syntax_error(error_message, offending_line)
+        query = handle_syntax_error(offending_line)
 
     elif error_type == "TabError":
         query = handle_tab_error(error_message)
@@ -43,7 +47,7 @@ def determine_query(error_info: dict, offending_line: int, packages) -> str:
 
     elif error_type == "AttributeError":
         query = handle_attr_error(error_message)
-        search = convert(extract_quoted_words(traceback))[1]
+        search = convert(get_quoted_words(traceback))[1]
         if search:
             pydoc_info = get_help(search, packages, DATA_TYPES)
 
@@ -52,7 +56,7 @@ def determine_query(error_info: dict, offending_line: int, packages) -> str:
 
     elif error_type == "NameError":
         query = handle_name_error(error_message)
-        search = convert(extract_quoted_words(traceback))[0]
+        search = None
         if search:
             pydoc_info = get_help(search, packages, DATA_TYPES)
 
@@ -82,7 +86,7 @@ def handle_key_error(error_message: str) -> str:
 def handle_attr_error(error_message):
     """ docstring later on """
 
-    quoted_words = convert(extract_quoted_words(error_message))
+    quoted_words = convert(get_quoted_words(error_message))
     error = " ".join(quoted_words)
     error = slugify(error, separator="+")
     return url_for_error(error)
@@ -95,7 +99,7 @@ def handle_indentation_error(error_message):
 
 
 def handle_index_error(message):
-    """ docstring later on """
+    """ Process an IndexError """
 
     to_remove = " cannot be "
     if to_remove in error:
@@ -107,31 +111,18 @@ def handle_index_error(message):
     return url_for_error(error)
 
 
-def handle_name_error(message):
-    """ docstring later on """
+def handle_name_error(error_message: str):
+    """Process an NameError by removing the variable name.
+    By doing this the default error can be search without interference
+    of the variable name, which does not add to the problem.
 
-    variables = []
-    query = ""
-
-    if SINGLE_QUOTE_CHAR in message:
-
-        variables = convert(extract_quoted_words(message))
-        to_add = None
-
-        if len(variables) > 1:
-            to_add = get_action_word(variables[0], variables[1])
-        else:
-            to_add = get_action_word(variables[0])
-
-        if not to_add:
-            return url_for_error("NameError")
-
-        query = query + to_add + " to " + variables[0]
-        return url_for_error(query)
-
-    # generic name error search
-    else:
-        return url_for_error("NameError")
+    example:
+    input:
+        "NameError: name 'a' is not defined"
+    output:
+        "NameError: name is not defined"
+    """
+    return url_for_error(remove_quoted_words(error_message))
 
 
 def handle_syntax_error(offending_line):
@@ -228,20 +219,11 @@ def check_tokens_for_query(tokens: List) -> str:
 
 
 def convert(quoted_words: List[str]) -> List[str]:
-    """take some quoted words on the error message
+    """Take some quoted words on the error message
     and try to translate then.
     """
     translated_words = [search_translate(w) for w in quoted_words]
     return translated_words
-
-
-def extract_quoted_words(error_message: str) -> List[str]:
-    """This method will extract words surrounded by single quotes.
-    Example:
-    input: "AttributeError: 'int' object has no attribute 'append'"
-    output: ['int', 'append']
-    """
-    return error_message.split(SINGLE_QUOTE_CHAR)[1::2]
 
 
 def get_query_params(error_message: str):
@@ -350,8 +332,9 @@ def url_for_error(error_message: str) -> str:
     return API_SEARCH_URL + get_query_params(error_message)
 
 
-def get_help(search, packages, datatypes):
+def get_help(search, packages: defaultdict, datatypes):
     """ gets help from the Python help() """
+    print("a")
 
     changed = False
     path = "output.txt"
@@ -363,9 +346,9 @@ def get_help(search, packages, datatypes):
         lines = help_to_code(search, lines)
 
     if not lines:
-        for pckg_name in packages:
+        for pckg_name in packages["import_name"]:
             try:
-                pckg = importlib.import_module(pckg_name)
+                pckg = import_module(pckg_name)
                 search_query = pckg.__name__ + "." + search
                 lines = help_to_list(path, search_query)
                 if not lines:
@@ -429,6 +412,15 @@ def help_to_code(search, lines):
     return res
 
 
+def get_quoted_words(error_message: str) -> List[str]:
+    """Extract words surrounded by single quotes.
+    Example:
+    input: "AttributeError: 'int' object has no attribute 'append'"
+    output: ['int', 'append']
+    """
+    return error_message.split(SINGLE_QUOTE_CHAR)[1::2]
+
+
 def remove_exception_from_error_message(error_message: str) -> str:
     """Removes the exception error from the error message.
     Example:
@@ -436,3 +428,46 @@ def remove_exception_from_error_message(error_message: str) -> str:
     output: "'int' object has no attribute 'append'"
     """
     return error_message.split(SINGLE_SPACE_CHAR, 1)[1]
+
+
+def remove_quoted_words(error_message: str):
+    """Removes quoted words from an error messsage.
+    Example:
+    input: "NameError: name 'a' is not defined"
+    output: "NameError: name is not defined"
+    """
+    return re.sub(r"'.*?'\s", EMPTY_STRING, error_message)
+
+
+# deprecated code
+
+
+def old_handle_name_error(error_message):
+    """This is currently deprecated as I (marcelofa) don't see value in checking
+    python_tasks.txt for context.
+    It seems that just relying on stackoverflow searching algorithm
+    is enough.
+    """
+
+    variables = []
+    query = ""
+
+    if SINGLE_QUOTE_CHAR in error_message:
+
+        variables = convert(get_quoted_words(error_message))
+        to_add = None
+
+        if len(variables) > 1:
+            to_add = get_action_word(variables[0], variables[1])
+        else:
+            to_add = get_action_word(variables[0])
+
+        if not to_add:
+            return url_for_error("NameError")
+
+        query = query + to_add + " to " + variables[0]
+        return url_for_error(query)
+
+    # generic name error search
+    else:
+        return url_for_error("NameError")
