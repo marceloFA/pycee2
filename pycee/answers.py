@@ -41,10 +41,14 @@ def get_questions(query):
 
     response = requests.get(query)
     response_json = response.json()
+    from pprint import pprint
+    pprint(response_json)
+    exit()
     question_ids = [str(question["question_id"]) for question in response_json["items"]]
 
     accepted_answer_ids = []
     for question in response_json["items"]:
+        
         if "accepted_answer_id" in question:
             field = str(question["accepted_answer_id"])
             accepted_answer_ids.append(field)

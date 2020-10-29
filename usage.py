@@ -7,7 +7,7 @@ if __name__ == '__main__':
     error_info = get_error_info()
     offending_line = get_offending_line(error_info)
     packages = get_packages(error_info['code'])
-    query, pydoc_info = determine_query(error_info, offending_line, packages)
+    query, pydoc_info = determine_query(error_info, offending_line, packages, limit=3)
     answers = get_answers(query, error_info['traceback'], offending_line)
     
     for i, answer in enumerate(answers):

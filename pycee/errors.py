@@ -24,7 +24,7 @@ API_SEARCH_URL = "https://api.stackexchange.com/2.2/search?site=stackoverflow"
 
 
 def determine_query(
-    error_info: dict, offending_line: int, packages: defaultdict
+    error_info: dict, offending_line: int, packages: defaultdict, limit: int
 ) -> str:
     """ choose the correct query to run based on the error type """
 
@@ -63,7 +63,15 @@ def determine_query(
     else:
         query = url_for_error(error_message)  # default query
 
+    query =  set_limit(query, limit)
+
     return query, pydoc_info
+
+def set_limit(query: str, limit: int) -> str:
+    ''' set the number of questions (and so answers) we want'''
+    
+    limit_param = f'&pagesize={limit}'
+    return query + limit_param
 
 
 def handle_key_error(error_message: str) -> str:
