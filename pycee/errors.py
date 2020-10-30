@@ -51,6 +51,9 @@ def determine_query(
         if search:
             pydoc_info = get_help(search, packages, DATA_TYPES)
 
+    elif error_type == "ModuleNotFoundError":
+        query = handle_module_not_found_error(error_message)
+
     elif error_type == "KeyError":
         query = handle_key_error(error_message)
 
@@ -206,6 +209,14 @@ def handle_type_error(error_message):
     else:
         # generic search
         return url_for_error(error_message)
+
+
+def handle_module_not_found_error(error_message):
+    """ Handling ModuleNoutFoundError is quite simple as most of well known packages 
+        already have questions on ModuleNotFoundError solved at stackoverflow""" 
+
+    message = error_message.replace('ModuleNotFoundError',EMPTY_STRING)
+    return url_for_error(message)
 
 
 #### Helpers
