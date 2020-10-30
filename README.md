@@ -40,3 +40,9 @@ For now, to use Pycee get some traceback of an error you have and put it in ``ex
 and the code that generates the error in ``example_code.py``.
 For ease of use there's already an example provided.
 Then to execute pycee, from the project root: ``python3 usage.py``.
+
+### :building_construction: Maintainers
+
+| [![Leonardo Furtado](https://github.com/LeonardoFurtado.png?size=100)](https://twitter.com/furtleo) | [![Marcelo Almeida](https://github.com/marceloFA.png?size=100)]() |
+| :-----------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------: |
+|          [Leonardo Furtado](https://github.com/LeonardoFurtado)                                           |          [Marcelo Almeida](https://github.com/marceloFA)      
