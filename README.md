@@ -43,6 +43,6 @@ Then to execute pycee, from the project root: ``python3 usage.py``.
 
 ### :building_construction: Maintainers
 
-| [![Leonardo Furtado](https://github.com/LeonardoFurtado.png?size=100)](https://twitter.com/furtleo) | [![Marcelo Almeida](https://github.com/marceloFA.png?size=100)]() |
+| [![Leonardo Furtado](https://github.com/LeonardoFurtado.png?size=100)](https://twitter.com/furtleo) | [![Marcelo Almeida](https://github.com/marceloFA.png?size=100)](https://github.com/marceloFA) |
 | :-----------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------: |
 |          [Leonardo Furtado](https://github.com/LeonardoFurtado)                                           |          [Marcelo Almeida](https://github.com/marceloFA)      
