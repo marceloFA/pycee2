@@ -1,0 +1,22 @@
+language: python
+
+python:
+ - "3.6"
+
+sudo: required
+
+install:
+ - pip install -r requirements.txt
+ - pip install -e .
+ - pip install pytest
+ - pip install pytest-cov
+ - pip install coveralls
+
+script:
+ - python3 -m pytest --capture=sys --cov=pycee tests/
+
+after_success:
+ - coveralls
+
+notifications:
+ email: false
