@@ -1,11 +1,5 @@
 <h1 align="center">Pycee2</h1>
 
-<p align="center" style="margin-bottom: 5px; margin-top: 5px;">
-  <a href="https://travis-ci.org/LeonardoFurtado/marceloFA/pycee2">
-        <img src="https://img.shields.io/travis/marceloFA/pycee2/master?logo=travis&style=for-the-badge" alt="Build Status">
-  </a>
-</p>
-
 This is a refactored version of [pycee](https://github.com/EmillieT/Pycee).
 Pycee 2 is a tool that provides enhanced error messages for Python code.
 
