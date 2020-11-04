@@ -2,6 +2,7 @@
 from typing import Dict, Union, Any
 from symtable import symtable
 from pyminifier.minification import remove_comments_and_docstrings
+import re
 
 
 def trim_and_split_code(code: str, error_line: str) -> [str]:
