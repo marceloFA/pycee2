@@ -1,6 +1,14 @@
 from sys import modules
 from pathlib import Path
 
+
+def get_project_root() -> Path:
+    """This will always return the project root, wherever it's called
+    So it's safe to import this to any other file of the project.
+    """
+    return Path(__file__).parent.parent
+
+
 # These are some constants we use throughout the codebase
 DEFAULT_HTML_PARSER = "html5lib"
 SINGLE_QUOTE_CHAR = "'"
@@ -34,8 +42,6 @@ DATA_TYPES = [
 BUILTINS = dir(modules["builtins"])
 
 
-def get_project_root() -> Path:
-    """This will always return the project root, wherever it's called
-    So it's safe to import this to any other file of the project.
-    """
-    return Path(__file__).parent.parent
+ERROR_MESSAGES = {
+    'KeyError': """<initial_error>\n\nKeyError exceptions are raised to the user when a key is not found in a dictionary.\nTo solve this error you may want to define a key with value <key> in the dictionary.\nOr you may want to use the method .get() of a dictionary which can retrieve the value associated\nto a key even when the key is missing by passing a default value.\nExample:\n\nfoo = your_dict.get('missing_key', default='bar')""",
+}
