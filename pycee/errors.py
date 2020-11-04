@@ -11,7 +11,7 @@ from importlib import import_module
 from slugify import slugify
 from difflib import get_close_matches
 
-from .utils import get_project_root, DATA_TYPES, BUILTINS
+from .utils import get_project_root, DATA_TYPES, BUILTINS, ERROR_MESSAGES
 from .utils import (
     SINGLE_QUOTE_CHAR,
     DOUBLE_QUOTE_CHAR,
@@ -23,12 +23,14 @@ from .utils import (
 API_SEARCH_URL = "https://api.stackexchange.com/2.2/search?site=stackoverflow"
 
 
-def determine_query(
-    error_info: dict, offending_line: int, packages: defaultdict, limit: int
+def handle_error(
+    error_info: dict, offending_line: str, packages: defaultdict, limit: int
 ) -> str:
-    """ choose the correct query to run based on the error type """
+    """ Process the incoming error as needed """
 
-    pydoc_info = None
+    query = None
+    pydoc_answer = None
+    pycee_answer = None
     error_type = error_info["type"]
     error_message = error_info["message"]
     traceback = error_info["traceback"]
@@ -45,53 +47,68 @@ def determine_query(
     elif error_type == "IndexError":
         query = handle_index_error(error_message)
 
-    elif error_type == "AttributeError":
-        query = handle_attr_error(error_message)
-        search = convert(get_quoted_words(traceback))[1]
-        if search:
-            pydoc_info = get_help(search, packages, DATA_TYPES)
-
     elif error_type == "ModuleNotFoundError":
         query = handle_module_not_found_error(error_message)
 
     elif error_type == "KeyError":
-        query = handle_key_error(error_message)
+        pycee_answer = handle_key_error(error_message, offending_line)
+
+    elif error_type == "AttributeError":
+        query = handle_attr_error(error_message)
+        search = convert(get_quoted_words(traceback))[1]
+        if search:
+            pydoc_answer = get_help(search, packages, DATA_TYPES)
 
     elif error_type == "NameError":
         query = handle_name_error(error_message)
         search = None
         if search:
-            pydoc_info = get_help(search, packages, DATA_TYPES)
+            pydoc_answer = get_help(search, packages, DATA_TYPES)
 
     else:
         query = url_for_error(error_message)  # default query
 
-    query =  set_limit(query, limit)
+    if query:
+        query = set_limit(query, limit)
 
-    return query, pydoc_info
+    return query, pycee_answer, pydoc_answer
+
 
 def set_limit(query: str, limit: int) -> str:
     ''' set the number of questions (and so answers) we want'''
-    
+
     limit_param = f'&pagesize={limit}'
     return query + limit_param
 
 
-def handle_key_error(error_message: str) -> str:
-    """ refactor this, please """
+def handle_key_error(error_message: str, offending_line: str) -> str:
+    ''' KeyError is a quite simple limited error and we can handle it manually. '''
 
-    # check for quotation marks which will contain code specific data for specific error
-    while SINGLE_QUOTE_CHAR in error_message:
-        start = error_message.find(SINGLE_QUOTE_CHAR)
-        end = error_message[start + 1 :].find(SINGLE_QUOTE_CHAR) + start + 2
-        error_message = error_message.replace(error_message[start:end], EMPTY_STRING)
+    answer = ERROR_MESSAGES['KeyError']
+    missing_key = error_message.split(SINGLE_SPACE_CHAR, maxsplit=1)[-1]
 
-    while DOUBLE_QUOTE_CHAR in error_message:
-        start = error_message.find(DOUBLE_QUOTE_CHAR)
-        end = error_message[start + 1 :].find(DOUBLE_QUOTE_CHAR) + start + 2
-        error_message = error_message.replace(error_message[start:end], EMPTY_STRING)
+    # this first regex will match part of the pattern of a dict acess: a_dict[some_value]
+    dict_acess_regex = fr'[A-Za-z_]\w*\['
+    # this second regex will match only the identifier of the problematic dictionaries
+    identifier_regex = r'[A-Za-z_]\w*'
 
-    return url_for_error(error_message)
+    acesses = re.findall(dict_acess_regex, offending_line)
+    indentifiers = [re.findall(identifier_regex, a)[0] for a in acesses]
+    
+    # when offending line deals with only the same problematic dictionary we can assert a better error message
+    # else when offending line contains different dictionaries with same missing key,
+    # we cannot determine which dict originated the error.
+    target = indentifiers[0] if len(set(indentifiers)) == 1 else None
+
+    if target:
+        answer = answer.replace('<initial_error>', f"Dictionary '{target}' does not have a key with value {missing_key}.")
+        answer = answer.replace('<key>', missing_key)
+    else:
+        formatted_identifiers = ", ".join(indentifiers)
+        answer = answer.replace('<initial_error>', f"One of dictionaries {formatted_identifiers} does not have a key with value {missing_key}.")
+        answer = answer.replace('<key>', missing_key)
+    
+    return answer
 
 
 def handle_attr_error(error_message):
@@ -213,13 +230,13 @@ def handle_type_error(error_message):
 
 def handle_module_not_found_error(error_message):
     """ Handling ModuleNoutFoundError is quite simple as most of well known packages 
-        already have questions on ModuleNotFoundError solved at stackoverflow""" 
+        already have questions on ModuleNotFoundError solved at stackoverflow"""
 
-    message = error_message.replace('ModuleNotFoundError',EMPTY_STRING)
+    message = error_message.replace('ModuleNotFoundError', EMPTY_STRING)
     return url_for_error(message)
 
 
-#### Helpers
+# Helpers
 
 
 def check_tokens_for_query(tokens: List) -> str:
@@ -281,7 +298,7 @@ def get_action_word(search1=None, search2=None) -> Union[None]:
     counter = []
     actions = []
 
-    for line in content[1 : len(content) - 1]:
+    for line in content[1: len(content) - 1]:
         c_1 = not search1 and search2 in line[2]
         c_2 = not search2 and search1 in line[1]
         c_4 = search1 and search2
@@ -293,7 +310,8 @@ def get_action_word(search1=None, search2=None) -> Union[None]:
                 actions.append(line[0])
                 counter.append(1)
             else:
-                counter[actions.index(line[0])] = counter[actions.index(line[0])] + 1
+                counter[actions.index(
+                    line[0])] = counter[actions.index(line[0])] + 1
 
     if not counter:
         return None
@@ -431,6 +449,7 @@ def help_to_code(search, lines):
     return res
 
 
+
 def get_quoted_words(error_message: str) -> List[str]:
     """Extract words surrounded by single quotes.
     Example:
@@ -458,35 +477,19 @@ def remove_quoted_words(error_message: str):
     return re.sub(r"'.*?'\s", EMPTY_STRING, error_message)
 
 
-# deprecated code
-
-
-def old_handle_name_error(error_message):
-    """This is currently deprecated as I (marcelofa) don't see value in checking
-    python_tasks.txt for context.
-    It seems that just relying on stackoverflow searching algorithm
-    is enough.
+def remove_outter_quotes(string:str) ->str:
+    """ This will remove both single and double quote chars from a string at the beggining and the end 
+        Example:
+        input: ('foo',) 'bar'"
     """
+    return string.strip('\"').strip("\'")
 
-    variables = []
-    query = ""
 
-    if SINGLE_QUOTE_CHAR in error_message:
-
-        variables = convert(get_quoted_words(error_message))
-        to_add = None
-
-        if len(variables) > 1:
-            to_add = get_action_word(variables[0], variables[1])
-        else:
-            to_add = get_action_word(variables[0])
-
-        if not to_add:
-            return url_for_error("NameError")
-
-        query = query + to_add + " to " + variables[0]
-        return url_for_error(query)
-
-    # generic name error search
-    else:
-        return url_for_error("NameError")
+def remove_text_between_tags(text:str, tag_name:str) -> str:
+    """ This will remove all text between the given tag 
+    Example:
+    input: "foo <code>a=2;<code> bar"
+    output: "foo  bar"
+    """
+    tag_regex = rf'<{tag_name}>(.+?)<{tag_name}>'
+    return re.sub(tag_regex, EMPTY_STRING, text)

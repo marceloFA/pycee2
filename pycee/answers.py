@@ -20,7 +20,7 @@ def get_answers(query, traceback, offending_line):
     """This coordinate the answer aquisition process. It goes like this:
     1- Use the query to check stackexchange API for related questions;
     2.1- Get answers from questions with accepted answers;
-    2.1- Get mot voted answers from questions without accepted answers;
+    2.1- Get most voted answers from questions without accepted answers;
     3- Summarize the answers and make it ready to output to the user;
     """
     questions_ids, accepted_answer_ids = get_questions(query)
