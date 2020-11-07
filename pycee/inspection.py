@@ -4,6 +4,7 @@ import re
 import sys
 from dis import get_instructions
 from collections import defaultdict
+from subprocess import Popen, PIPE, STDOUT
 from typing import Union
 
 from .utils import BUILTINS, EMPTY_STRING
@@ -12,18 +13,59 @@ from .utils import get_project_root
 project_root = get_project_root()
 
 
-def get_compilation_error_from_file(file_name: str = "example_error_msg.txt") -> str:
-    """If we're integrating with PythonBuddy, this adapter will be replaced.
-    As a mean of developing Pycee, this is enough.
+def get_error_info(script_path):
+    """ summarize all error information we have available """
+
+    # traceback = get_traceback_error_from_file()
+    traceback = get_traceback_from_script(script_path)
+    error_message = get_error_message(traceback)
+    error_type = get_error_type(error_message)
+    error_line = get_error_line(traceback)
+    file_name = get_file_name(traceback)
+    code = get_code(file_name)
+
+    error_info = {
+        "traceback": traceback,
+        "message": error_message,
+        "type": error_type,
+        "line": error_line,
+        "file": file_name,
+        "code": code,
+    }
+
+    if not all(error_info.values()):
+        print("Aborting. Some data about the error is missing:")
+        print(error_info)
+        sys.exit(-1)
+
+    return error_info
+
+
+def get_traceback_from_script(file_path: str) -> str:
+    """Get the traceback of a python script directly from the
+    standard output (stdout) using a subprocess to execute the script.
+
+    about subprocess.PIPE:
+        passed as stdin and stdout arguments to Popen to indicate that these two streams
+        should be processed in a separate handler that can be just ignored
+    about subprocess.STDOUT:
+        passed as stderr argument to Popen to indicate that stderr should be handled as stdout.
+
+    input:
+        file_path = path to the script passed as an arguement on the command line
+    output:
+        the traceback as a string
     """
 
-    with open(os.path.join(project_root, file_name), "r") as error_msg_file:
-        traceback = error_msg_file.read()
-    return traceback
+    command = "python3 " + str(file_path)
+    subprocess = Popen(command, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+    stderr = subprocess.stdout.read()
+    subprocess.kill()
+    return stderr.decode("utf-8")
 
 
-def get_error_message(trackback: str) -> Union[str, None]:
-    """Extracts the error message from the trackback.
+def get_error_message(traceback: str) -> Union[str, None]:
+    """Extracts the error message from the traceback.
     If no error message is found, will return None.
     Here's an example:
 
@@ -37,7 +79,7 @@ def get_error_message(trackback: str) -> Union[str, None]:
     ModuleNotFoundError: No module named 'kivy'
     """
 
-    error_lines = trackback.split("\n")
+    error_lines = traceback.splitlines()
     return error_lines[-1]
 
 
@@ -111,37 +153,11 @@ def get_file_name(error_message: str) -> Union[int, None]:
         return None
 
 
-def get_code(file_name: str) -> str:
+def get_code(file_path: str) -> str:
     """ Gets the source code of the specified file """
-    with open(os.path.join(project_root, file_name), "r") as file:
+    with open(file_path, "r") as file:
         code = file.read()
-        return code
-
-
-def get_error_info():
-    """ summarize all error information we have available """
-    traceback = get_compilation_error_from_file()
-    error_message = get_error_message(traceback)
-    error_type = get_error_type(error_message)
-    error_line = get_error_line(traceback)
-    file_name = get_file_name(traceback)
-    code = get_code(file_name)
-
-    error_info = {
-        "traceback": traceback,
-        "message": error_message,
-        "type": error_type,
-        "line": error_line,
-        "file": file_name,
-        "code": code,
-    }
-
-    if not all(error_info.values()):
-        print("Aborting. Some data about the error is missing:")
-        print(error_info)
-        sys.exit(-1)
-
-    return error_info
+    return code
 
 
 def get_packages(code: str) -> defaultdict:
