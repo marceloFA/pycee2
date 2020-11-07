@@ -27,7 +27,6 @@ def get_answers(query, traceback, offending_line):
     accepted_answers_bodies = get_accepted_answers(accepted_answer_ids)
     other_answers_bodies = get_most_voted_answers(questions_ids)
 
-
     answers = []
     for body in accepted_answers_bodies + other_answers_bodies:
         code_position = identify_code(body)
@@ -46,7 +45,7 @@ def get_questions(query):
 
     response = requests.get(query)
     response_json = response.json()
-    #question_ids = [str(question["question_id"]) for question in response_json["items"]]
+    # question_ids = [str(question["question_id"]) for question in response_json["items"]]
 
     accepted_answer_ids = []
     question_ids = []
@@ -66,7 +65,7 @@ def get_questions(query):
 
 
 def get_accepted_answers(accepted_answer_ids: List[str]) -> List[str]:
-    ''' Take an accepted answer id and return the body of it '''
+    """ Take an accepted answer id and return the body of it """
 
     answers_bodies = []
     for id in accepted_answer_ids:
@@ -78,14 +77,14 @@ def get_accepted_answers(accepted_answer_ids: List[str]) -> List[str]:
 
 
 def get_most_voted_answers(questions_ids: List[str]) -> List[str]:
-    ''' Take an accepted answer id and return the body of it.
-        As we want only the most voted answer, we can order by vote count
-        and limit ansers by one.
-    '''
-    page_size = '&pagesize=1'
-    order  = '&order=desc'
+    """Take an accepted answer id and return the body of it.
+    As we want only the most voted answer, we can order by vote count
+    and limit ansers by one.
+    """
+    page_size = "&pagesize=1"
+    order = "&order=desc"
     url = QUESTION_ANSWERS_URL + page_size + order
-    
+
     answers_bodies = []
     for id in questions_ids:
         response = requests.get(url.replace("<id>", str(id)))
@@ -94,8 +93,8 @@ def get_most_voted_answers(questions_ids: List[str]) -> List[str]:
     return answers_bodies
 
 
-
 # Method to summary an answer body and remove html tags and formating
+
 
 def parse_summarizer(answer_body):
     summary = None
