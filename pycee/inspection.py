@@ -1,5 +1,4 @@
 """ This module will inspect the error source code and the error log."""
-import os
 import re
 import sys
 from dis import get_instructions
@@ -7,7 +6,7 @@ from collections import defaultdict
 from subprocess import Popen, PIPE, STDOUT
 from typing import Union
 
-from .utils import BUILTINS, EMPTY_STRING
+from .utils import BUILTINS
 from .utils import get_project_root
 
 project_root = get_project_root()
@@ -122,7 +121,7 @@ def get_error_line(error_message: str) -> Union[int, None]:
         error_header = re.search(regex1, error_message)[0]
         error_line = re.search(regex2, error_header)[0]
         return int(error_line)
-    except:
+    except TypeError:
         return None
 
 
@@ -149,7 +148,7 @@ def get_file_name(error_message: str) -> Union[int, None]:
         error_header = re.search(regex1, error_message)[0]
         file_name = re.search(regex2, error_header)[0]
         return file_name[1:-1]  # remove double quotes
-    except:
+    except TypeError:
         return None
 
 

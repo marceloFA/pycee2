@@ -1,3 +1,4 @@
+""" Some data to be kept apart from application logic"""
 import argparse
 from sys import modules
 from pathlib import Path
@@ -73,5 +74,11 @@ BUILTINS = dir(modules["builtins"])
 
 
 ERROR_MESSAGES = {
-    "KeyError": """<initial_error>\n\nKeyError exceptions are raised to the user when a key is not found in a dictionary.\nTo solve this error you may want to define a key with value <key> in the dictionary.\nOr you may want to use the method .get() of a dictionary which can retrieve the value associated\nto a key even when the key is missing by passing a default value.\nExample:\n\nfoo = your_dict.get('missing_key', default='bar')""",
+    "KeyError": (
+        "<initial_error>\n\nKeyError exceptions are raised to the user when a key is not found in a dictionary."
+        "\nTo solve this error you may want to define a key with value <key> in the dictionary."
+        "\nOr you may want to use the method .get() of a dictionary which can retrieve the value associated"
+        "\nto a key even when the key is missing by passing a default value."
+        "\nExample:\n\nfoo = your_dict.get('missing_key', default='bar')"
+    ),
 }

@@ -7,9 +7,9 @@ from keyword import kwlist
 from typing import List, Union
 from collections import defaultdict
 from importlib import import_module
+from difflib import get_close_matches
 
 from slugify import slugify
-from difflib import get_close_matches
 
 from .utils import get_project_root, DATA_TYPES, BUILTINS, ERROR_MESSAGES
 from .utils import (
@@ -88,14 +88,15 @@ def handle_key_error(error_message: str, offending_line: str) -> str:
     missing_key = error_message.split(SINGLE_SPACE_CHAR, maxsplit=1)[-1]
 
     # this first regex will match part of the pattern of a dict acess: a_dict[some_value]
-    dict_acess_regex = fr"[A-Za-z_]\w*\["
+    dict_acess_regex = r"[A-Za-z_]\w*\["
     # this second regex will match only the identifier of the problematic dictionaries
     identifier_regex = r"[A-Za-z_]\w*"
 
     acesses = re.findall(dict_acess_regex, offending_line)
     indentifiers = [re.findall(identifier_regex, a)[0] for a in acesses]
 
-    # when offending line deals with only the same problematic dictionary we can assert a better error message
+    # when offending line deals with only the same problematic dictionary
+    # we can assert a better error message
     # else when offending line contains different dictionaries with same missing key,
     # we cannot determine which dict originated the error.
     target = indentifiers[0] if len(set(indentifiers)) == 1 else None
@@ -223,15 +224,13 @@ def handle_type_error(error_message):
 
     hint1 = "the first argument must be callable"
     hint2 = "not all arguments converted during string formatting"
-
+    message = ""
     if hint1 in error_message:
-        return url_for_error("must have first callable argument")
+        message = "must have first callable argument"
     elif hint2 in message:
         message = remove_exception_from_error_message(error_message)
-        return url_for_error(message)
-    else:
-        # generic search
-        return url_for_error(error_message)
+
+    return url_for_error(error_message)
 
 
 def handle_module_not_found_error(error_message):
@@ -248,17 +247,20 @@ def handle_module_not_found_error(error_message):
 def check_tokens_for_query(tokens: List) -> str:
     """  Check SyntaxError tokens to determine an apropriate query """
 
-    if "for" in tokens:
-        return "for loop"
-    elif "while" in tokens:
-        return "while loop"
-    elif "if" in tokens or "else" in tokens:
-        return "if else syntax"
-    elif "def" in tokens:
-        return "function definition"
-    else:
-        return "SyntaxError: invalid syntax"
+    query = ""
 
+    if "for" in tokens:
+        query =  "for loop"
+    elif "while" in tokens:
+        query = "while loop"
+    elif "if" in tokens or "else" in tokens:
+        query =  "if else syntax"
+    elif "def" in tokens:
+        query = "function definition"
+    else:
+        query = "SyntaxError: invalid syntax"
+
+    return query
 
 def convert(quoted_words: List[str]) -> List[str]:
     """Take some quoted words on the error message
@@ -338,7 +340,7 @@ def search_translate(word: str) -> str:
 
     word = word.lstrip().lower()
     word = word.replace(SINGLE_QUOTE_CHAR, EMPTY_STRING)
-    readable_DATA_TYPES = [
+    readable_data_types = [
         "integer",
         "float",
         "complex",
@@ -352,7 +354,7 @@ def search_translate(word: str) -> str:
     ]
 
     if word in DATA_TYPES:
-        return readable_DATA_TYPES[DATA_TYPES.index(word)]
+        return readable_data_types[DATA_TYPES.index(word)]
 
     # search through provided list
     for syntax in syntax_across_languages:
@@ -376,7 +378,8 @@ def url_for_error(error_message: str) -> str:
 
 def get_help(search, packages: defaultdict, datatypes):
     """ gets help from the Python help() """
-    print("a")
+
+    # TODO: Too many branches, please refactor this method
 
     changed = False
     path = "output.txt"
@@ -396,6 +399,7 @@ def get_help(search, packages: defaultdict, datatypes):
                 if not lines:
                     break
             except:
+                # TODO: what exception should pass?
                 pass
 
         if not lines:
@@ -482,7 +486,8 @@ def remove_quoted_words(error_message: str):
 
 
 def remove_outter_quotes(string: str) -> str:
-    """This will remove both single and double quote chars from a string at the beggining and the end
+    """This will remove both single and double quote chars
+    from a string at the beggining and the end.
     Example:
     input: ('foo',) 'bar'"
     """

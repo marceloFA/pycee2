@@ -1,19 +1,19 @@
 """ This module contains the logic of accessing stackoverflow,
- retrieving the adequate questions for the compiler error 
+ retrieving the adequate questions for the compiler error
  and then choosing the best answer for the error"""
 
 import re
-import requests
 from keyword import kwlist
 from typing import List
-
 from difflib import get_close_matches
+
+import requests
 from sumy.nlp.tokenizers import Tokenizer
 from sumy.summarizers.luhn import LuhnSummarizer
 from sumy.parsers.plaintext import PlaintextParser
 
 from .utils import SINGLE_SPACE_CHAR, COMMA_CHAR, EMPTY_STRING
-from .utils import DEFAULT_HTML_PARSER, BUILTINS, ANSWER_URL, QUESTION_ANSWERS_URL
+from .utils import BUILTINS, ANSWER_URL, QUESTION_ANSWERS_URL
 
 
 def get_answers(query, traceback, offending_line):
@@ -68,8 +68,8 @@ def get_accepted_answers(accepted_answer_ids: List[str]) -> List[str]:
     """ Take an accepted answer id and return the body of it """
 
     answers_bodies = []
-    for id in accepted_answer_ids:
-        response = requests.get(ANSWER_URL.replace("<id>", str(id)))
+    for id_ in accepted_answer_ids:
+        response = requests.get(ANSWER_URL.replace("<id>", str(id_)))
         answer_body = response.json()["items"][0]["body"]
         answers_bodies.append(answer_body)
 
@@ -86,26 +86,27 @@ def get_most_voted_answers(questions_ids: List[str]) -> List[str]:
     url = QUESTION_ANSWERS_URL + page_size + order
 
     answers_bodies = []
-    for id in questions_ids:
-        response = requests.get(url.replace("<id>", str(id)))
+    for id_ in questions_ids:
+        response = requests.get(url.replace("<id>", str(id_)))
         answer_body = response.json()["items"][0]["body"]
         answers_bodies.append(answer_body)
     return answers_bodies
 
 
-# Method to summary an answer body and remove html tags and formating
-
-
 def parse_summarizer(answer_body):
+    ''' Method to summary an answer body
+    and remove html tags and formating.
+    TODO: has not been refactored yet
+    '''
     summary = None
     if len(answer_body.split("\n")) <= 4:
         summary = answer_body
     else:
-        tmpSummary = get_summary(answer_body)
+        tmp_summary = get_summary(answer_body)
         summary = []
-        tmpTest = answer_body.replace(". ", "\n")
-        for line in tmpSummary:
-            for sec in tmpTest.split("\n"):
+        temp_test = answer_body.replace(". ", "\n")
+        for line in tmp_summary:
+            for sec in temp_test.split("\n"):
                 if (sec.lstrip() != "") and (sec.lstrip() in str(line)):
                     if "*pre*" in str(line):
                         sec = sec.replace("*pre*", EMPTY_STRING)
@@ -113,7 +114,7 @@ def parse_summarizer(answer_body):
                         for i in summary:
                             if sec == i:
                                 exists = True
-                        if exists == False:
+                        if not exists:
                             sec = sec.replace("&gt;", ">")
                             sec = sec.replace("&lt;COMMA_CHAR<")
                             summary.append(sec)
@@ -153,21 +154,21 @@ def get_summary(sentences):
 def identify_code(text):
     """ retrieve code from the answer body """
 
-    startTag = "<code>"
-    endTag = "</code>"
+    start_tag = "<code>"
+    end_tag = "</code>"
     pos = []  # list to hold code positions
 
-    if startTag in text:
-        for i, c in enumerate(text):
-            if c == "<":
-                if startTag == text[i : i + len(startTag)]:
+    if start_tag in text:
+        for i, char in enumerate(text):
+            if char == "<":
+                if start_tag == text[i : i + len(start_tag)]:
                     pos.append([])
-                    pos[len(pos) - 1].append(i + len(startTag))
+                    pos[len(pos) - 1].append(i + len(start_tag))
                     if text[i - 5 : i] == "<pre>":
                         pos[len(pos) - 1].append(1)
                     else:
                         pos[len(pos) - 1].append(0)
-                if endTag == text[i : i + len(endTag)]:
+                if end_tag == text[i : i + len(end_tag)]:
                     pos[len(pos) - 1].append(i)
 
         for i in range(0, len(pos)):
@@ -183,16 +184,16 @@ def remove_tags(text):
     text = text.replace("<pre>", "*pre*")
     text = text.replace("</pre>", "*pre*")
     cleaner = re.compile("<.*?>")
-    cleanText = re.sub(cleaner, "", text)
-    return cleanText
+    clean_text = re.sub(cleaner, "", text)
+    return clean_text
 
 
 def replace_code(text, pos, message, offending_line):
-    """ docstring later on """
+    """ docstring and refactor work later on """
 
-    newText = text
-    noTags = remove_tags(text)
-    noTagsLines = noTags.split("\n")
+    new_text = text
+    no_tags = remove_tags(text)
+    no_tags_lines = no_tags.split("\n")
     error_lines = message.split("\n")
     error_type = None
     for line in error_lines:
@@ -200,18 +201,18 @@ def replace_code(text, pos, message, offending_line):
             error_type = line.split(SINGLE_SPACE_CHAR, 1)[0]
 
     error_header = error_lines[1]
-    QAOffendingLine = None  # Syntax Error only
-    QAErrorLine = None
+    qa_offending_line = None  # Syntax Error only
+    qa_error_line = None
 
     # check for compiler text in question/answer
     regex = r"(File|Traceback)(.+)\n(.+)((\n)|(\n( |\t)+\^))\n(Arithmetic|FloatingPoint|Overflow|ZeroDivision|Assertion|Attribute|Buffer|EOF|Import|ModuleNotFound|Lookup|Index|Key|Memory|Name|UnboundLocal|OS|BlockingIO|ChildProcess|Connection|BrokenPipe|ConnectionAborted|ConnectionRefused|ConnectionReset|FileExists|FileNotFound|Interrupted|IsADirectory|NotADirectory|Permission|ProcessLookup|Timeout|Reference|Runtime|NotImplemented|Recursion|Syntax|Indentation|Tab|System|Type|Value|Unicode|UnicodeDecode|UnicodeEncode|UnicodeTranslate)(Error:)(.+)"
-    match = re.search(regex, noTags)
+    match = re.search(regex, no_tags)
     if match:
-        QAErrorLine = match.group(0).split("\n")[1]
+        qa_error_line = match.group(0).split("\n")[1]
         # ALSO CHECK QUESTION?
 
     # if SyntaxError we may need to handle differently
-    if error_type == "SyntaxError:" and QAErrorLine:
+    if error_type == "SyntaxError:" and qa_error_line:
         if error_header != offending_line:
             for i in range(len(pos)):
                 previous = None
@@ -219,105 +220,105 @@ def replace_code(text, pos, message, offending_line):
                     match.group(0) not in text[pos[i][0] : pos[i][1]]
                 ):
                     for line in text[pos[i][0] : pos[i][1]].split("\n"):
-                        if line == QAErrorLine:
-                            QAOffendingLine = previous
+                        if line == qa_error_line:
+                            qa_offending_line = previous
                         previous = line
 
             # check previous line
             # if previous line of code, swap and exit
-            if QAOffendingLine:
-                QAOffendingLine = QAOffendingLine.strip()
+            if qa_offending_line:
+                qa_offending_line = qa_offending_line.strip()
             if error_header:
                 error_header = error_header.strip()
-            if QAErrorLine:
-                QAErrorLine = QAErrorLine.strip()
+            if qa_error_line:
+                qa_error_line = qa_error_line.strip()
 
-            # print(QAOffendingLine)
+            # print(qa_offending_line)
             # print(error_header)
-            # print(QAErrorLine)
+            # print(qa_error_line)
             # print(offending_line)
 
             for i in reversed(pos):
-                x = pos.index(i)
-                if QAOffendingLine in text[pos[x][0] : pos[x][1]]:
-                    newText = newText[: pos[x][0]] + error_header + newText[pos[x][1] :]
-                elif QAErrorLine in text[pos[x][0] : pos[x][1]]:
-                    newText = (
-                        newText[: pos[x][0]] + offending_line + newText[pos[x][1] :]
+                j = pos.index(i)
+                if qa_offending_line in text[pos[j][0] : pos[j][1]]:
+                    new_text = new_text[: pos[j][0]] + error_header + new_text[pos[j][1] :]
+                elif qa_error_line in text[pos[j][0] : pos[j][1]]:
+                    new_text = (
+                        new_text[: pos[j][0]] + offending_line + new_text[pos[j][1] :]
                     )
-            return newText
-    if QAErrorLine == None:
-        tmpQAErrorLine = get_close_matches(offending_line, noTagsLines, 1, 0.4)
-        if tmpQAErrorLine == []:
-            return text
-        else:
-            QAErrorLine = tmpQAErrorLine[0]
-    if (QAErrorLine == None) or (QAErrorLine == ""):
+            return new_text
+
+    if qa_error_line is None:
+        tmpqa_error_line = get_close_matches(offending_line, no_tags_lines, 1, 0.4)
+        if tmpqa_error_line:
+            qa_error_line = tmpqa_error_line[0]
+
+    if (qa_error_line is None) or (qa_error_line == ""):
         return text
-    # print(QAErrorLine)
+    # print(qa_error_line)
     # if exists, check for similar lines
-    possibleLines = []
-    if QAErrorLine == None:
-        possibleLines = get_close_matches(QAErrorLine, noTagsLines, 3, 0.4)
+    possible_lines = []
+    if qa_error_line is None:
+        possible_lines = get_close_matches(qa_error_line, no_tags_lines, 3, 0.4)
         # SequenceMatcher(None,line,line2).ratio()
-        # print(possibleLines)
+        # print(possible_lines)
     # if exists, substitute variables
-    if len(possibleLines) > 0 or QAErrorLine:
+    if len(possible_lines) > 0 or qa_error_line:
         # tokenise similar to before, may have to group
-        userVariables = []
-        userBuiltin = []
+        user_variables = []
+        usr_builtins = []
         tokens = re.split(r"[!@#$%^&*_\-+=\(\)\[\]\{\}\\|~`/?.<>:; ]", error_header)
-        for x in reversed(tokens):
-            if (x not in kwlist) and (x not in BUILTINS):
-                userVariables.append(x)
+        for token in reversed(tokens):
+            if (token not in kwlist) and (token not in BUILTINS):
+                user_variables.append(token)
             else:
-                userBuiltin.append(x)
-        userVariables = list(reversed(userVariables))
-        userBuiltin = list(reversed(userBuiltin))
+                usr_builtins.append(token)
+        user_variables = list(reversed(user_variables))
+        usr_builtins = list(reversed(usr_builtins))
         # split
-        QALine = None
-        if QAErrorLine:
-            QALine = QAErrorLine
+        qa_line = None
+        if qa_error_line:
+            qa_line = qa_error_line
         else:
-            QALine = possibleLines[0]
-        if "," in QALine:
-            while (", " in QALine) or (" ," in QALine):
-                QALine = QALine.replace(", ", COMMA_CHAR)
-                QALine = QALine.replace(" ,", COMMA_CHAR)
-        QAVariables = []
-        tokens = re.split(r"[!@#$%^&*_\-+=\(\)\[\]\{\}\\|~`/?.<>:; ]", QALine)
-        for x in reversed(tokens):
-            if (x not in kwlist) and (x not in BUILTINS):
-                QAVariables.append(x)
-        QAVariables = list(reversed(QAVariables))
+            qa_line = possible_lines[0]
+        if "," in qa_line:
+            while (", " in qa_line) or (" ," in qa_line):
+                qa_line = qa_line.replace(", ", COMMA_CHAR)
+                qa_line = qa_line.replace(" ,", COMMA_CHAR)
+        qa_variables = []
+        tokens = re.split(r"[!@#$%^&*_\-+=\(\)\[\]\{\}\\|~`/?.<>:; ]", qa_line)
+        for token in reversed(tokens):
+            if (token not in kwlist) and (token not in BUILTINS):
+                qa_variables.append(token)
+        qa_variables = list(reversed(qa_variables))
 
-        for word in reversed(QAVariables):
+        for word in reversed(qa_variables):
             if word == "":
-                QAVariables.remove(word)
+                qa_variables.remove(word)
 
-        for word in reversed(userVariables):
+        for word in reversed(user_variables):
             if not word:
-                userVariables.remove(word)
+                user_variables.remove(word)
 
-        # print(QAVariables)
-        # print(userVariables)
+        # print(qa_variables)
+        # print(user_variables)
 
-        newQALine = QALine
-        if len(userVariables) == len(QAVariables):
-            for word, i in enumerate(QAVariables):
-                newQALine.replace(word, userVariables[i])
+        newqa_line = qa_line
+        if len(user_variables) == len(qa_variables):
+            for word, i in enumerate(qa_variables):
+                newqa_line.replace(word, user_variables[i])
 
-    return newText
+    return new_text
 
 
-def remove_code(text, pos, maxLength, removeBlocks):
+def remove_code(text, pos, max_length, remove_blocks):
     """ currently unused. was this a previous version of  querystackoverflow.identify_code?"""
 
-    newText = text
+    new_text = text
     for i in range(len(pos)):
         to_remove = text[pos[len(pos) - 1 - i][0] : pos[len(pos) - 1 - i][1]]
-        if removeBlocks and bool(pos[len(pos) - 1 - i][2]):
-            newText = newText.replace(to_remove, "")
-        elif len(to_remove) > maxLength:
-            newText = newText.replace(to_remove, "")
-    return newText
+        if remove_blocks and bool(pos[len(pos) - 1 - i][2]):
+            new_text = new_text.replace(to_remove, "")
+        elif len(to_remove) > max_length:
+            new_text = new_text.replace(to_remove, "")
+    return new_text
