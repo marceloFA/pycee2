@@ -161,14 +161,14 @@ def identify_code(text):
     if start_tag in text:
         for i, char in enumerate(text):
             if char == "<":
-                if start_tag == text[i : i + len(start_tag)]:
+                if start_tag == text[i:i+len(start_tag)]:
                     pos.append([])
                     pos[len(pos) - 1].append(i + len(start_tag))
-                    if text[i - 5 : i] == "<pre>":
+                    if text[i-5:i] == "<pre>":
                         pos[len(pos) - 1].append(1)
                     else:
                         pos[len(pos) - 1].append(0)
-                if end_tag == text[i : i + len(end_tag)]:
+                if end_tag == text[i:i + len(end_tag)]:
                     pos[len(pos) - 1].append(i)
 
         for i in range(0, len(pos)):
@@ -217,9 +217,9 @@ def replace_code(text, pos, message, offending_line):
             for i in range(len(pos)):
                 previous = None
                 if bool(pos[i][2]) and (
-                    match.group(0) not in text[pos[i][0] : pos[i][1]]
+                    match.group(0) not in text[pos[i][0]:pos[i][1]]
                 ):
-                    for line in text[pos[i][0] : pos[i][1]].split("\n"):
+                    for line in text[pos[i][0]:pos[i][1]].split("\n"):
                         if line == qa_error_line:
                             qa_offending_line = previous
                         previous = line
@@ -240,11 +240,11 @@ def replace_code(text, pos, message, offending_line):
 
             for i in reversed(pos):
                 j = pos.index(i)
-                if qa_offending_line in text[pos[j][0] : pos[j][1]]:
-                    new_text = new_text[: pos[j][0]] + error_header + new_text[pos[j][1] :]
-                elif qa_error_line in text[pos[j][0] : pos[j][1]]:
+                if qa_offending_line in text[pos[j][0]:pos[j][1]]:
+                    new_text = new_text[:pos[j][0]] + error_header + new_text[pos[j][1]:]
+                elif qa_error_line in text[pos[j][0]:pos[j][1]]:
                     new_text = (
-                        new_text[: pos[j][0]] + offending_line + new_text[pos[j][1] :]
+                        new_text[: pos[j][0]] + offending_line + new_text[pos[j][1]:]
                     )
             return new_text
 
@@ -316,7 +316,7 @@ def remove_code(text, pos, max_length, remove_blocks):
 
     new_text = text
     for i in range(len(pos)):
-        to_remove = text[pos[len(pos) - 1 - i][0] : pos[len(pos) - 1 - i][1]]
+        to_remove = text[pos[len(pos) - 1 - i][0]:pos[len(pos) - 1 - i][1]]
         if remove_blocks and bool(pos[len(pos) - 1 - i][2]):
             new_text = new_text.replace(to_remove, "")
         elif len(to_remove) > max_length:

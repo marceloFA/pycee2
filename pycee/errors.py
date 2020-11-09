@@ -137,13 +137,13 @@ def handle_index_error(message):
     """ Process an IndexError """
 
     to_remove = " cannot be "
-    if to_remove in error:
-        error = message.replace(to_remove, EMPTY_STRING)
+    if to_remove in message:
+        message = message.replace(to_remove, EMPTY_STRING)
 
-    error = message.replace("IndexError:", "index error")
-    error = slugify(message, separator="+")
+    message = message.replace("IndexError:", "index error")
+    message = slugify(message, separator="+")
 
-    return url_for_error(error)
+    return url_for_error(message)
 
 
 def handle_name_error(error_message: str):
@@ -262,6 +262,7 @@ def check_tokens_for_query(tokens: List) -> str:
 
     return query
 
+
 def convert(quoted_words: List[str]) -> List[str]:
     """Take some quoted words on the error message
     and try to translate then.
@@ -306,7 +307,7 @@ def get_action_word(search1=None, search2=None) -> Union[None]:
     counter = []
     actions = []
 
-    for line in content[1 : len(content) - 1]:
+    for line in content[1:len(content)-1]:
         c_1 = not search1 and search2 in line[2]
         c_2 = not search2 and search1 in line[1]
         c_4 = search1 and search2

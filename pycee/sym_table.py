@@ -6,7 +6,6 @@ from symtable import symtable
 from pyminifier.minification import remove_comments_and_docstrings
 
 
-
 def trim_and_split_code(code: str, error_line: str) -> List[str]:
     """This will trimm all code that comes after the line
     that contains the error and return the code that remains
@@ -60,11 +59,11 @@ def broken_get_sym_table(error_info):
 
     if is_syntax_error:
         n_lines_to_skip = get_syntax_error_skipable_lines(error_info["traceback"])
-        #offending_line = clean_code_lines[-n_lines_to_skip]
+        # offending_line = clean_code_lines[-n_lines_to_skip]
         n_lines_to_remove = n_lines_to_skip
     else:
         pass
-        #offending_line = code_lines[error_line]
+        # offending_line = code_lines[error_line]
 
     clean_code_lines = clean_code_lines[:-n_lines_to_remove]
 
@@ -94,7 +93,7 @@ def get_syntax_error_skipable_lines(traceback):
     This method will return the number of uninformative lines
     we can skip from a SyntaxError.
     """
-    if not "^" in traceback:
+    if "^" not in traceback:
         # accept compiler line
         return 1
 

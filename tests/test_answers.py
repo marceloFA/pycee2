@@ -1,4 +1,4 @@
-from httmock import urlmatch, all_requests, HTTMock
+from httmock import all_requests, HTTMock
 from pycee.answers import get_questions, get_accepted_answers
 from pycee.utils import ANSWER_URL
 
