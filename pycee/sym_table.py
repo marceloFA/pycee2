@@ -1,21 +1,25 @@
 """ This module will build the sym table for the error source code """
-from typing import Dict, Union, Any
-from symtable import symtable
-from pyminifier.minification import remove_comments_and_docstrings
+from typing import List
 import re
 
+from symtable import symtable
+from pyminifier.minification import remove_comments_and_docstrings
 
-def trim_and_split_code(code: str, error_line: str) -> [str]:
+
+def trim_and_split_code(code: str, error_line: str) -> List[str]:
     """This will trimm all code that comes after the line
     that contains the error and return the code that remains
     splitted in separated lines.
     """
     code = code.split("\n")
+    trimmed_code = ''
 
     if error_line > 0:
-        return code[:error_line]
+        trimmed_code = code[:error_line]
     else:
-        return code[0]
+        trimmed_code = code[0]
+
+    return trimmed_code
 
 
 def get_offending_line(error_info):
@@ -55,10 +59,11 @@ def broken_get_sym_table(error_info):
 
     if is_syntax_error:
         n_lines_to_skip = get_syntax_error_skipable_lines(error_info["traceback"])
-        offending_line = clean_code_lines[-n_lines_to_skip]
+        # offending_line = clean_code_lines[-n_lines_to_skip]
         n_lines_to_remove = n_lines_to_skip
     else:
-        offending_line = code_lines[error_line]
+        pass
+        # offending_line = code_lines[error_line]
 
     clean_code_lines = clean_code_lines[:-n_lines_to_remove]
 
@@ -78,8 +83,8 @@ def broken_get_sym_table(error_info):
     final_code = (
         clean_code + "\n" + indent + "import sys" + "\n" + indent + "sys.exit()" + "\n"
     )
-    symTable = symtable(final_code, "userCode", "exec")
-    return symTable
+    sym_table = symtable(final_code, "userCode", "exec")
+    return sym_table
 
 
 def get_syntax_error_skipable_lines(traceback):
@@ -88,7 +93,7 @@ def get_syntax_error_skipable_lines(traceback):
     This method will return the number of uninformative lines
     we can skip from a SyntaxError.
     """
-    if not "^" in traceback:
+    if "^" not in traceback:
         # accept compiler line
         return 1
 
@@ -98,13 +103,13 @@ def get_syntax_error_skipable_lines(traceback):
 
     # set max length, if first token ends at the same position as ^
     # then the error is on the previous line
-    maxLength = len(lines[1].split("^")[0]) + 1
+    max_length = len(lines[1].split("^")[0]) + 1
     tmp = re.split(r"[!@#$%^&*_\-+=\(\)\[\]\{\}\\|~`/?.,<>:; ]", lines[0])
 
     i = 0
     while not tmp[i]:
         i += 1
-    tempLength = i + len(tmp[i])
+    temp_len = i + len(tmp[i])
     # take previous line
-    if tempLength >= maxLength:
+    if temp_len >= max_length:
         return 2

@@ -2,7 +2,7 @@ import pytest
 from collections import defaultdict
 
 from pycee.inspection import (
-    get_compilation_error_from_file,
+    get_traceback_from_script,
     get_error_message,
     get_error_type,
     get_error_line,
@@ -13,59 +13,68 @@ from pycee.inspection import (
 
 
 # TODO: should these fixtures have scopes?
-
 @pytest.fixture()
-def traceback_file(tmpdir):
-    """ A fixture to simulate a file that contains the traceback text of an compilation error """
-    traceback = tmpdir.join('traceback.txt')
-    traceback.write("Traceback (most recent call last):\n  File \"error_code.py\", line 2, in <module>\n    import kivy\nModuleNotFoundError: No module named 'kivy'")
-    return traceback
-
-@pytest.fixture()
-def source_file(tmpdir):
-    """ A fixture to simulate a file that contains python code that generates an error """
-    source = tmpdir.join('error_code.py')
-    source.write('import collections\nimport kivy\n\n\nbar = collections.Counter()\nprint(\'foo\')')
+def source_file_fixture(tmpdir):
+    """ Simulate a file that contains python code that generates an error """
+    source = tmpdir.join("error_code.py")
+    source.write(
+        "import collections\nimport kivy\nbar = collections.Counter()\nprint('foo')\n"
+    )
     return source
 
 
-def test_get_compilation_error_from_file(traceback_file):
-    actual_comp_error = get_compilation_error_from_file(file_name=str(traceback_file))
-    assert traceback_file.read() == actual_comp_error
+@pytest.fixture()
+def traceback_fixture(source_file_fixture):
+    """ make text content of traceback easily available """
+    return get_traceback_from_script(str(source_file_fixture))
 
 
-def test_get_error_message(traceback_file):
-    traceback = get_compilation_error_from_file(file_name=str(traceback_file))
-    error_message = get_error_message(traceback)
+def test_get_traceback_from_script(source_file_fixture):
+
+    path = str(source_file_fixture)
+    expected_traceback_content = f"Traceback (most recent call last):\n  File \"{path}\", line 2, in <module>\n    import kivy\nModuleNotFoundError: No module named 'kivy'\n"
+    assert get_traceback_from_script(path) == expected_traceback_content
+
+
+def test_get_error_message(traceback_fixture):
+
+    error_message = get_error_message(traceback_fixture)
     assert error_message == "ModuleNotFoundError: No module named 'kivy'"
 
 
-def test_get_error_type(traceback_file):
-    traceback = get_compilation_error_from_file(file_name=str(traceback_file))
-    error_message = get_error_message(traceback)
+def test_get_error_type(traceback_fixture):
+
+    error_message = get_error_message(traceback_fixture)
     error_type = get_error_type(error_message)
     assert error_type == "ModuleNotFoundError"
 
 
-def test_get_error_line(traceback_file):
-    error_message = get_compilation_error_from_file(file_name=str(traceback_file))
-    error_line = get_error_line(error_message)
+def test_get_error_line(traceback_fixture):
+
+    error_line = get_error_line(traceback_fixture)
     assert error_line == 2
 
 
-def test_get_file_name(traceback_file):
-    error_message = get_compilation_error_from_file(file_name=str(traceback_file))
-    file_name = get_file_name(error_message)
-    assert file_name == "error_code.py"
+def test_get_file_name(source_file_fixture, traceback_fixture):
+
+    file_name = get_file_name(traceback_fixture)
+    assert file_name == str(source_file_fixture)
 
 
-def test_get_code(source_file):
-    assert get_code(str(source_file)) == source_file.read()
+def test_get_code(source_file_fixture, traceback_fixture):
+
+    assert get_code(str(source_file_fixture)) == source_file_fixture.read()
 
 
 def test_get_packages():
-    error_message = 'from collections import Counter\nimport kivy\nfrom stats import median as stats_median\n'
-    packages = defaultdict(list,{'import_name': ['collections', 'kivy', 'stats'],'import_from': ['Counter', 'median']})
-    
+
+    error_message = "from collections import Counter\nimport kivy\nfrom stats import median as stats_median\n"
+    packages = defaultdict(
+        list,
+        {
+            "import_name": ["collections", "kivy", "stats"],
+            "import_from": ["Counter", "median"],
+        },
+    )
+
     assert get_packages(error_message) == packages
-    
