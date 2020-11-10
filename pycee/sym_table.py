@@ -12,7 +12,7 @@ def trim_and_split_code(code: str, error_line: str) -> List[str]:
     splitted in separated lines.
     """
     code = code.split("\n")
-    trimmed_code = ''
+    trimmed_code = ""
 
     if error_line > 0:
         trimmed_code = code[:error_line]
@@ -80,9 +80,7 @@ def broken_get_sym_table(error_info):
         else:
             indent = indent + indent
 
-    final_code = (
-        clean_code + "\n" + indent + "import sys" + "\n" + indent + "sys.exit()" + "\n"
-    )
+    final_code = clean_code + "\n" + indent + "import sys" + "\n" + indent + "sys.exit()" + "\n"
     sym_table = symtable(final_code, "userCode", "exec")
     return sym_table
 

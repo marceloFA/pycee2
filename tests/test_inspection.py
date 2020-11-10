@@ -17,9 +17,7 @@ from pycee.inspection import (
 def source_file_fixture(tmpdir):
     """ Simulate a file that contains python code that generates an error """
     source = tmpdir.join("error_code.py")
-    source.write(
-        "import collections\nimport kivy\nbar = collections.Counter()\nprint('foo')\n"
-    )
+    source.write("import collections\nimport kivy\nbar = collections.Counter()\nprint('foo')\n")
     return source
 
 
