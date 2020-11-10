@@ -13,17 +13,21 @@ if __name__ == "__main__":
     packages = get_packages(error_info["code"])
     query, pycee_answer, pydoc_answer = handle_error(error_info, offending_line, packages, limit=args.n_answers)
 
-    if query:
+    if args.dry_run:
+        print(query)
+        exit(1)
+
+    elif query:
         answers = get_answers(query, error_info["traceback"], offending_line)
 
         for i, answer in enumerate(answers):
             print(f"Solution {i}:")
             print(answer)
 
-    if pycee_answer:
+    elif pycee_answer:
         print(pycee_answer)
 
     # TODO: fix pydocs information, currently not working.
-    if pydoc_answer:
+    elif pydoc_answer:
         print("From PyDocs")
         print("\n".join(pydoc_answer))
