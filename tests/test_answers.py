@@ -72,6 +72,4 @@ def test_get_accepted_answers_return_only_one_accepted_answer():
     with HTTMock(fake_answer_request):
         answer_bodies = get_accepted_answers(answer_id)
 
-    assert answer_bodies == [
-        "<p>Installing....</p>\n<pre><code>pip3 install package\n</code></pre>\n"
-    ]
+    assert answer_bodies == ["<p>Installing....</p>\n<pre><code>pip3 install package\n</code></pre>\n"]

@@ -11,9 +11,7 @@ if __name__ == "__main__":
     error_info = get_error_info(args.file)
     offending_line = get_offending_line(error_info)
     packages = get_packages(error_info["code"])
-    query, pycee_answer, pydoc_answer = handle_error(
-        error_info, offending_line, packages, limit=args.n_answers
-    )
+    query, pycee_answer, pydoc_answer = handle_error(error_info, offending_line, packages, limit=args.n_answers)
 
     if query:
         answers = get_answers(query, error_info["traceback"], offending_line)

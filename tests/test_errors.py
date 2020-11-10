@@ -50,9 +50,7 @@ from pycee.utils import ERROR_MESSAGES
         ),
     ],
 )
-def test_handle_key_error_with_known_target(
-    error_message, offending_line, expected, monkeypatch
-):
+def test_handle_key_error_with_known_target(error_message, offending_line, expected, monkeypatch):
     monkeypatch.setitem(ERROR_MESSAGES, "KeyError", "<initial_error>")
     assert handle_key_error(error_message, offending_line) == expected
 
@@ -82,8 +80,6 @@ def test_handle_key_error_with_known_target(
         ),
     ],
 )
-def test_handle_key_error_with_unknown_target(
-    error_message, offending_line, expected, monkeypatch
-):
+def test_handle_key_error_with_unknown_target(error_message, offending_line, expected, monkeypatch):
     monkeypatch.setitem(ERROR_MESSAGES, "KeyError", "<initial_error>")
     assert handle_key_error(error_message, offending_line) == expected

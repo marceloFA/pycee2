@@ -23,9 +23,7 @@ from .utils import (
 API_SEARCH_URL = "https://api.stackexchange.com/2.2/search?site=stackoverflow"
 
 
-def handle_error(
-    error_info: dict, offending_line: str, packages: defaultdict, limit: int
-) -> str:
+def handle_error(error_info: dict, offending_line: str, packages: defaultdict, limit: int) -> str:
     """ Process the incoming error as needed """
 
     query = None
@@ -171,16 +169,8 @@ def handle_syntax_error(offending_line):
         return url_for_error("quotation marks")
 
     # unmathcing number of parenthese, brackets or braces error
-    opening_brackets = (
-        offending_line.count("(")
-        + offending_line.count("[")
-        + offending_line.count("{")
-    )
-    closing_bracket = (
-        offending_line.count(")")
-        + offending_line.count("]")
-        + offending_line.count("}")
-    )
+    opening_brackets = offending_line.count("(") + offending_line.count("[") + offending_line.count("{")
+    closing_bracket = offending_line.count(")") + offending_line.count("]") + offending_line.count("}")
 
     if opening_brackets != closing_bracket:
         return url_for_error("bracket meanings")
@@ -250,11 +240,11 @@ def check_tokens_for_query(tokens: List) -> str:
     query = ""
 
     if "for" in tokens:
-        query =  "for loop"
+        query = "for loop"
     elif "while" in tokens:
         query = "while loop"
     elif "if" in tokens or "else" in tokens:
-        query =  "if else syntax"
+        query = "if else syntax"
     elif "def" in tokens:
         query = "function definition"
     else:
@@ -307,7 +297,7 @@ def get_action_word(search1=None, search2=None) -> Union[None]:
     counter = []
     actions = []
 
-    for line in content[1:len(content)-1]:
+    for line in content[1 : len(content) - 1]:
         c_1 = not search1 and search2 in line[2]
         c_2 = not search2 and search1 in line[1]
         c_4 = search1 and search2

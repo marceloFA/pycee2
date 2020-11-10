@@ -2,3 +2,4 @@
 pytest
 httmock
 flake8
+pre-commit
