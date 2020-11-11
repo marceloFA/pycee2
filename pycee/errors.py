@@ -1,4 +1,4 @@
-""" Contains all the logic that handles code errors """
+"""Contains all the logic that handles code errors."""
 import re
 import sys
 from json import load
@@ -24,7 +24,7 @@ API_SEARCH_URL = "https://api.stackexchange.com/2.2/search?site=stackoverflow"
 
 
 def handle_error(error_info: dict, offending_line: str, packages: defaultdict, limit: int) -> str:
-    """ Process the incoming error as needed """
+    """Process the incoming error as needed."""
 
     query = None
     pydoc_answer = None
@@ -73,14 +73,14 @@ def handle_error(error_info: dict, offending_line: str, packages: defaultdict, l
 
 
 def set_limit(query: str, limit: int) -> str:
-    """ set the number of questions (and so answers) we want"""
+    """Set the number of questions (and so answers) we want."""
 
     limit_param = f"&pagesize={limit}"
     return query + limit_param
 
 
 def handle_key_error(error_message: str, offending_line: str) -> str:
-    """ KeyError is a quite simple limited error and we can handle it manually. """
+    """KeyError is a quite simple limited error and we can handle it manually."""
 
     answer = ERROR_MESSAGES["KeyError"]
     missing_key = error_message.split(SINGLE_SPACE_CHAR, maxsplit=1)[-1]
@@ -126,13 +126,13 @@ def handle_attr_error(error_message):
 
 
 def handle_indentation_error(error_message):
-    """ Process an IndentationError """
+    """Process an IndentationError."""
     message = remove_exception_from_error_message(error_message)
     return url_for_error(message)
 
 
 def handle_index_error(message):
-    """ Process an IndexError """
+    """Process an IndexError."""
 
     to_remove = " cannot be "
     if to_remove in message:
@@ -204,13 +204,13 @@ def handle_syntax_error(offending_line):
 
 
 def handle_tab_error(error_message):
-    """ Process an TabError """
+    """Process an TabError."""
     message = remove_exception_from_error_message(error_message)
     return url_for_error(message)
 
 
 def handle_type_error(error_message):
-    """ Process an TypeError """
+    """Process an TypeError."""
 
     hint1 = "the first argument must be callable"
     hint2 = "not all arguments converted during string formatting"
@@ -235,7 +235,7 @@ def handle_module_not_found_error(error_message):
 
 
 def check_tokens_for_query(tokens: List) -> str:
-    """  Check SyntaxError tokens to determine an apropriate query """
+    """Check SyntaxError tokens to determine an apropriate query."""
 
     query = ""
 
@@ -254,15 +254,13 @@ def check_tokens_for_query(tokens: List) -> str:
 
 
 def convert(quoted_words: List[str]) -> List[str]:
-    """Take some quoted words on the error message
-    and try to translate then.
-    """
+    """Take some quoted words on the error message and try to translate then."""
     translated_words = [search_translate(w) for w in quoted_words]
     return translated_words
 
 
 def get_query_params(error_message: str):
-    """ preps the query to include necessary filters and meet URL format """
+    """Prepares the query to include necessary filters and meet URL format."""
 
     error_message_slug = slugify(error_message, separator="+")
     order = "&order=desc"
@@ -274,7 +272,7 @@ def get_query_params(error_message: str):
 
 
 def get_action_word(search1=None, search2=None) -> Union[None]:
-    """ Returns action word associated with input """
+    """Returns action word associated with input."""
 
     if not search1 and not search2:
         return None
@@ -362,13 +360,13 @@ def search_translate(word: str) -> str:
 
 
 def url_for_error(error_message: str) -> str:
-    """ Build a valid search url """
+    """Build a valid search url."""
 
     return API_SEARCH_URL + get_query_params(error_message)
 
 
 def get_help(search, packages: defaultdict, datatypes):
-    """ gets help from the Python help() """
+    """Gets help from the Python help()."""
 
     # TODO: Too many branches, please refactor this method
 
@@ -412,7 +410,7 @@ def get_help(search, packages: defaultdict, datatypes):
 
 
 def help_to_list(path, search):
-    """ Converts the help() format to an easy to use list """
+    """Converts the help() format to an easy to use list."""
 
     with open(path, "w") as file:
         sys.__stdout__ = sys.stdout
@@ -428,7 +426,7 @@ def help_to_list(path, search):
 
 
 def help_to_code(search, lines):
-    """ Extracts the code from a list of help() data """
+    """Extracts the code from a list of help() data."""
     res = []
 
     if len(lines) <= 2:

@@ -1,4 +1,4 @@
-""" This module will build the sym table for the error source code """
+"""This module will build the sym table for the error source code."""
 from typing import List
 import re
 
@@ -23,7 +23,7 @@ def trim_and_split_code(code: str, error_line: str) -> List[str]:
 
 
 def get_offending_line(error_info):
-    """ Gets the offending line. """
+    """Gets the offending line."""
 
     offending_line = None
     is_syntax_error = error_info["type"] == "SyntaxError"
@@ -43,7 +43,7 @@ def get_offending_line(error_info):
 
 
 def broken_get_sym_table(error_info):
-    """ This is currently broken!"""
+    """This is currently broken!"""
 
     error_line = error_info["line"] - 1  # make this 0 indexed
     is_syntax_error = error_info["type"] == "SyntaxError"
@@ -59,11 +59,9 @@ def broken_get_sym_table(error_info):
 
     if is_syntax_error:
         n_lines_to_skip = get_syntax_error_skipable_lines(error_info["traceback"])
-        # offending_line = clean_code_lines[-n_lines_to_skip]
         n_lines_to_remove = n_lines_to_skip
     else:
         pass
-        # offending_line = code_lines[error_line]
 
     clean_code_lines = clean_code_lines[:-n_lines_to_remove]
 

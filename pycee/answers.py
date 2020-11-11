@@ -1,4 +1,4 @@
-""" This module contains the logic of accessing stackoverflow,
+"""This module contains the logic of accessing stackoverflow,
  retrieving the adequate questions for the compiler error
  and then choosing the best answer for the error"""
 
@@ -45,7 +45,6 @@ def get_questions(query):
 
     response = requests.get(query)
     response_json = response.json()
-    # question_ids = [str(question["question_id"]) for question in response_json["items"]]
 
     accepted_answer_ids = []
     question_ids = []
@@ -65,7 +64,7 @@ def get_questions(query):
 
 
 def get_accepted_answers(accepted_answer_ids: List[str]) -> List[str]:
-    """ Take an accepted answer id and return the body of it """
+    """Take an accepted answer id and return the body of it."""
 
     answers_bodies = []
     for id_ in accepted_answer_ids:
@@ -136,11 +135,9 @@ def parse_summarizer(answer_body):
 
 
 def get_summary(sentences):
-    """ convert sentences to single string -> not good for code """
+    """Convert sentences to single string -> not good for code."""
 
     parser = PlaintextParser.from_string(sentences, Tokenizer("english"))
-    # get length of answer(s)
-    # numSentences=len(parser.document.sentences)
     length = 4  # halve length and round up
     # summarise text
     summariser = LuhnSummarizer()
@@ -152,7 +149,7 @@ def get_summary(sentences):
 
 
 def identify_code(text):
-    """ retrieve code from the answer body """
+    """Retrieve code from the answer body."""
 
     start_tag = "<code>"
     end_tag = "</code>"
@@ -231,11 +228,6 @@ def replace_code(text, pos, message, offending_line):
             if qa_error_line:
                 qa_error_line = qa_error_line.strip()
 
-            # print(qa_offending_line)
-            # print(error_header)
-            # print(qa_error_line)
-            # print(offending_line)
-
             for i in reversed(pos):
                 j = pos.index(i)
                 if qa_offending_line in text[pos[j][0] : pos[j][1]]:
@@ -251,13 +243,10 @@ def replace_code(text, pos, message, offending_line):
 
     if (qa_error_line is None) or (qa_error_line == ""):
         return text
-    # print(qa_error_line)
     # if exists, check for similar lines
     possible_lines = []
     if qa_error_line is None:
         possible_lines = get_close_matches(qa_error_line, no_tags_lines, 3, 0.4)
-        # SequenceMatcher(None,line,line2).ratio()
-        # print(possible_lines)
     # if exists, substitute variables
     if len(possible_lines) > 0 or qa_error_line:
         # tokenise similar to before, may have to group
@@ -296,25 +285,9 @@ def replace_code(text, pos, message, offending_line):
             if not word:
                 user_variables.remove(word)
 
-        # print(qa_variables)
-        # print(user_variables)
-
         newqa_line = qa_line
         if len(user_variables) == len(qa_variables):
             for word, i in enumerate(qa_variables):
                 newqa_line.replace(word, user_variables[i])
 
-    return new_text
-
-
-def remove_code(text, pos, max_length, remove_blocks):
-    """ currently unused. was this a previous version of  querystackoverflow.identify_code?"""
-
-    new_text = text
-    for i in range(len(pos)):
-        to_remove = text[pos[len(pos) - 1 - i][0] : pos[len(pos) - 1 - i][1]]
-        if remove_blocks and bool(pos[len(pos) - 1 - i][2]):
-            new_text = new_text.replace(to_remove, "")
-        elif len(to_remove) > max_length:
-            new_text = new_text.replace(to_remove, "")
     return new_text
