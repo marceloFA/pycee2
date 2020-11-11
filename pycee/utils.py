@@ -1,4 +1,4 @@
-""" Some data to be kept apart from application logic"""
+"""Some data to be kept apart from application logic."""
 import argparse
 from sys import modules
 from pathlib import Path
@@ -13,7 +13,7 @@ def get_project_root() -> Path:
 
 
 def create_argparser():
-    """ A simple argparser to be used when pycee is executed as a script"""
+    """A simple argparser to be used when pycee is executed as a script."""
 
     parser = argparse.ArgumentParser("pycee2", description="easier error messages")
     parser.add_argument(

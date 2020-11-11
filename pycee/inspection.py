@@ -1,4 +1,4 @@
-""" This module will inspect the error source code and the error log."""
+"""This module will inspect the error source code and the error log."""
 import re
 import sys
 from dis import get_instructions
@@ -13,9 +13,8 @@ project_root = get_project_root()
 
 
 def get_error_info(script_path):
-    """ summarize all error information we have available """
+    """Summarize all error information we have available."""
 
-    # traceback = get_traceback_error_from_file()
     traceback = get_traceback_from_script(script_path)
     error_message = get_error_message(traceback)
     error_type = get_error_type(error_message)
@@ -153,7 +152,7 @@ def get_file_name(error_message: str) -> Union[int, None]:
 
 
 def get_code(file_path: str) -> str:
-    """ Gets the source code of the specified file """
+    """Gets the source code of the specified file."""
     with open(file_path, "r") as file:
         code = file.read()
     return code
