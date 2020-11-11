@@ -34,6 +34,7 @@ def create_argparser():
         dest="n_answers",
         help="the number of answers to retrieve from Stackoverflow",
     )
+    parser.add_argument("--dry-run", dest="dry_run", action="store_true")
 
     return parser
 

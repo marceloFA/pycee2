@@ -3,4 +3,3 @@ sumy
 html5lib
 pyminifier
 python-slugify
-
