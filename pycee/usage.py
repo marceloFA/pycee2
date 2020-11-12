@@ -5,9 +5,10 @@ from pycee.inspection import get_error_info, get_packages
 from pycee.sym_table import get_offending_line
 from pycee.utils import create_argparser, validate_args
 
+
 def usage():
     """ intended to be execute when pycee is installed as a module """
-    
+
     args = create_argparser().parse_args()
     validate_args(args)
     print(args)

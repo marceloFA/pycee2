@@ -36,10 +36,11 @@ def create_argparser():
 
     return parser
 
+
 def validate_args(args):
     """ Check if arguments passed through command line are valid """
     if args.file is None:
-        raise FileNotFoundError('filename not passed as argument')
+        raise FileNotFoundError("filename not passed as argument")
 
 
 # These are some constants we use throughout the codebase
