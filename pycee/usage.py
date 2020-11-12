@@ -1,12 +1,16 @@
+import sys
 from pycee.answers import get_answers
 from pycee.errors import handle_error
 from pycee.inspection import get_error_info, get_packages
 from pycee.sym_table import get_offending_line
-from pycee.utils import create_argparser
+from pycee.utils import create_argparser, validate_args
 
-if __name__ == "__main__":
-
+def usage():
+    """ intended to be execute when pycee is installed as a module """
+    
     args = create_argparser().parse_args()
+    validate_args(args)
+    print(args)
 
     error_info = get_error_info(args.file)
     offending_line = get_offending_line(error_info)
@@ -15,7 +19,7 @@ if __name__ == "__main__":
 
     if args.dry_run:
         print(query)
-        exit(1)
+        sys.exit()
 
     elif query:
         answers = get_answers(query, error_info["traceback"], offending_line)

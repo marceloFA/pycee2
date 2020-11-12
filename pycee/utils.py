@@ -19,9 +19,7 @@ def create_argparser():
     parser.add_argument(
         "-f",
         metavar="--file",
-        nargs="?",
         type=str,
-        default=path.join(get_project_root(), "example_code.py"),
         dest="file",
         help="path to the script that contains the error",
     )
@@ -37,6 +35,11 @@ def create_argparser():
     parser.add_argument("--dry-run", dest="dry_run", action="store_true")
 
     return parser
+
+def validate_args(args):
+    """ Check if arguments passed through command line are valid """
+    if args.file is None:
+        raise FileNotFoundError('filename not passed as argument')
 
 
 # These are some constants we use throughout the codebase
