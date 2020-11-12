@@ -271,51 +271,6 @@ def get_query_params(error_message: str):
     return order + sort + python_tagged + intitle
 
 
-def get_action_word(search1=None, search2=None) -> Union[None]:
-    """Returns action word associated with input."""
-
-    if not search1 and not search2:
-        return None
-
-    with open(join(get_project_root(), "python_tasks.txt"), "rb") as temp_content:
-        temp_content = temp_content.read().decode("utf-8", errors="ignore").split("\n")
-
-    # action - object - preposition
-    content = []
-    # clean data
-    i = 0
-    for line in temp_content:
-        content.append([])
-        lst = line.split("] ")
-        for item in lst:
-            item = item.strip(" []\n\r")
-            content[i].append(item)
-        i = i + 1
-    # search by two words, frequency analysis by action, additional constraints
-    counter = []
-    actions = []
-
-    for line in content[1 : len(content) - 1]:
-        c_1 = not search1 and search2 in line[2]
-        c_2 = not search2 and search1 in line[1]
-        c_4 = search1 and search2
-        c_5 = search1 in line[1] and search2 in line[2]
-        c_3 = c_4 and c_5
-
-        if c_1 or c_2 or c_3:
-            if line[0] not in actions:
-                actions.append(line[0])
-                counter.append(1)
-            else:
-                counter[actions.index(line[0])] = counter[actions.index(line[0])] + 1
-
-    if not counter:
-        return None
-
-    # return the max found amongst results
-    return actions[counter.index(max(counter))]
-
-
 def search_translate(word: str) -> str:
     """Try to get a more readable translation of a programming term.
     Else try to look up for a translation on the syntax_across_languages file.
