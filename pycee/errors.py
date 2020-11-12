@@ -11,8 +11,8 @@ from difflib import get_close_matches
 
 from slugify import slugify
 
-from utils import get_project_root, DATA_TYPES, BUILTINS, ERROR_MESSAGES
-from utils import (
+from .utils import get_project_root, DATA_TYPES, BUILTINS, ERROR_MESSAGES
+from .utils import (
     SINGLE_QUOTE_CHAR,
     DOUBLE_QUOTE_CHAR,
     SINGLE_SPACE_CHAR,
