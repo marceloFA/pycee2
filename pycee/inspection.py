@@ -7,9 +7,6 @@ from subprocess import Popen, PIPE, STDOUT
 from typing import Union
 
 from .utils import BUILTINS
-from .utils import get_project_root
-
-project_root = get_project_root()
 
 
 def get_error_info(script_path):
