@@ -48,6 +48,9 @@ def handle_error(error_info: dict, offending_line: str, packages: defaultdict, l
     elif error_type == "ModuleNotFoundError":
         query = handle_module_not_found_error(error_message)
 
+    elif error_type == "TypeError":
+        query = handle_type_error(error_message)
+
     elif error_type == "KeyError":
         pycee_answer = handle_key_error(error_message, offending_line)
 
@@ -217,10 +220,12 @@ def handle_type_error(error_message):
     message = ""
     if hint1 in error_message:
         message = "must have first callable argument"
-    elif hint2 in message:
+    elif hint2 in error_message:
         message = remove_exception_from_error_message(error_message)
+    else:
+        return url_for_error(error_message)
 
-    return url_for_error(error_message)
+    return url_for_error(message)
 
 
 def handle_module_not_found_error(error_message):
