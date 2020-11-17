@@ -11,7 +11,7 @@ from difflib import get_close_matches
 
 from slugify import slugify
 
-from .utils import get_project_root, DATA_TYPES, BUILTINS, ERROR_MESSAGES
+from .utils import DATA_TYPES, BUILTINS, ERROR_MESSAGES
 from .utils import (
     SINGLE_QUOTE_CHAR,
     DOUBLE_QUOTE_CHAR,
@@ -24,14 +24,18 @@ API_SEARCH_URL = "https://api.stackexchange.com/2.2/search?site=stackoverflow"
 
 
 def handle_error(error_info: dict, offending_line: str, packages: defaultdict, limit: int) -> str:
-    """Process the incoming error as needed."""
+    """Process the incoming error as needed and outputs three possible answer.
+    output:
+    query: an URL containing an stackoverflow query about the error.
+    pycee_answer: A possible answer for the error produced locally.
+    TODO: pydoc_answer: A possible answer extracted from the builtin help.
+    """
 
     query = None
     pydoc_answer = None
     pycee_answer = None
     error_type = error_info["type"]
     error_message = error_info["message"]
-    traceback = error_info["traceback"]
 
     if error_type == "SyntaxError":
         query = handle_syntax_error(offending_line)
@@ -46,22 +50,19 @@ def handle_error(error_info: dict, offending_line: str, packages: defaultdict, l
         query = handle_index_error(error_message)
 
     elif error_type == "ModuleNotFoundError":
+        pycee_answer = handle_module_error_locally(error_message)
         query = handle_module_not_found_error(error_message)
 
     elif error_type == "KeyError":
-        pycee_answer = handle_key_error(error_message, offending_line)
+        pycee_answer = handle_key_error_locally(error_message, offending_line)
+        query = handle_key_error(error_message)
 
     elif error_type == "AttributeError":
         query = handle_attr_error(error_message)
-        search = convert(get_quoted_words(traceback))[1]
-        if search:
-            pydoc_answer = get_help(search, packages, DATA_TYPES)
 
     elif error_type == "NameError":
+        pycee_answer = handle_name_error_locally(error_message)
         query = handle_name_error(error_message)
-        search = None
-        if search:
-            pydoc_answer = get_help(search, packages, DATA_TYPES)
 
     else:
         query = url_for_error(error_message)  # default query
@@ -72,15 +73,9 @@ def handle_error(error_info: dict, offending_line: str, packages: defaultdict, l
     return query, pycee_answer, pydoc_answer
 
 
-def set_limit(query: str, limit: int) -> str:
-    """Set the number of questions (and so answers) we want."""
-
-    limit_param = f"&pagesize={limit}"
-    return query + limit_param
-
-
-def handle_key_error(error_message: str, offending_line: str) -> str:
-    """KeyError is a quite simple limited error and we can handle it manually."""
+def handle_key_error_locally(error_message: str, offending_line: str) -> str:
+    """When KeyError is handled locally we remind the user that the problematic
+    dict should have a key with a certain value."""
 
     answer = ERROR_MESSAGES["KeyError"]
     missing_key = error_message.split(SINGLE_SPACE_CHAR, maxsplit=1)[-1]
@@ -116,12 +111,58 @@ def handle_key_error(error_message: str, offending_line: str) -> str:
     return answer
 
 
-def handle_attr_error(error_message):
-    """ docstring later on """
+def handle_key_error(error_message: str) -> str:
+    """ Directly asks Stackoverflow for similar errors. """
 
-    quoted_words = convert(get_quoted_words(error_message))
-    error = " ".join(quoted_words)
-    error = slugify(error, separator="+")
+    error = slugify(error_message, separator="+")
+    return url_for_error(error)
+
+
+def handle_name_error_locally(error_message: str) -> str:
+    """When NameError is handled locally we ask if the user
+    accidentally forget to define a variable or misspelled its name."""
+
+    missing_name = get_quoted_words(error_message)[0]
+    answer = ERROR_MESSAGES["NameError"].replace("<missing_name>", missing_name)
+    return answer
+
+
+def handle_name_error(error_message: str):
+    """Process an NameError by removing the variable name.
+    By doing this the default error can be search without interference
+    of the variable name, which does not add to the problem.
+
+    example:
+    input:
+        "NameError: name 'a' is not defined"
+    output:
+        "NameError: name is not defined"
+    """
+    return url_for_error(remove_quoted_words(error_message))
+
+
+def handle_module_error_locally(error_message):
+    """Ask if the user has passed a valid module name or
+    if it's installable though pip"""
+
+    missing_module = get_quoted_words(error_message)[0]
+    answer = ERROR_MESSAGES["ModuleNotFoundError"].replace("<missing_module>", missing_module)
+    return answer
+
+
+def handle_module_not_found_error(error_message):
+    """Handling ModuleNoutFoundError is quite simple as most of well known packages
+    already have questions on ModuleNotFoundError solved at stackoverflow"""
+
+    message = error_message.replace("ModuleNotFoundError", EMPTY_STRING)
+    return url_for_error(message)
+
+
+def handle_attr_error(error_message):
+    """Process an AttributeError by directly asking Stackovweflow
+    about the error message."""
+
+    error = slugify(error_message, separator="+")
     return url_for_error(error)
 
 
@@ -144,22 +185,8 @@ def handle_index_error(message):
     return url_for_error(message)
 
 
-def handle_name_error(error_message: str):
-    """Process an NameError by removing the variable name.
-    By doing this the default error can be search without interference
-    of the variable name, which does not add to the problem.
-
-    example:
-    input:
-        "NameError: name 'a' is not defined"
-    output:
-        "NameError: name is not defined"
-    """
-    return url_for_error(remove_quoted_words(error_message))
-
-
 def handle_syntax_error(offending_line):
-    """ docstring later on """
+    """ docstring later on. need to be refactored. """
 
     # unmathcing number of quotation marks error
     single = offending_line.count(SINGLE_QUOTE_CHAR)
@@ -223,17 +250,6 @@ def handle_type_error(error_message):
     return url_for_error(error_message)
 
 
-def handle_module_not_found_error(error_message):
-    """Handling ModuleNoutFoundError is quite simple as most of well known packages
-    already have questions on ModuleNotFoundError solved at stackoverflow"""
-
-    message = error_message.replace("ModuleNotFoundError", EMPTY_STRING)
-    return url_for_error(message)
-
-
-# Helpers
-
-
 def check_tokens_for_query(tokens: List) -> str:
     """Check SyntaxError tokens to determine an apropriate query."""
 
@@ -253,10 +269,14 @@ def check_tokens_for_query(tokens: List) -> str:
     return query
 
 
-def convert(quoted_words: List[str]) -> List[str]:
-    """Take some quoted words on the error message and try to translate then."""
-    translated_words = [search_translate(w) for w in quoted_words]
-    return translated_words
+# Helper methods below
+
+
+def set_limit(query: str, limit: int) -> str:
+    """Set the number of questions we want from Stackoverflow."""
+
+    limit_param = f"&pagesize={limit}"
+    return query + limit_param
 
 
 def get_query_params(error_message: str):
@@ -271,180 +291,10 @@ def get_query_params(error_message: str):
     return order + sort + python_tagged + intitle
 
 
-def get_action_word(search1=None, search2=None) -> Union[None]:
-    """Returns action word associated with input."""
-
-    if not search1 and not search2:
-        return None
-
-    with open(join(get_project_root(), "python_tasks.txt"), "rb") as temp_content:
-        temp_content = temp_content.read().decode("utf-8", errors="ignore").split("\n")
-
-    # action - object - preposition
-    content = []
-    # clean data
-    i = 0
-    for line in temp_content:
-        content.append([])
-        lst = line.split("] ")
-        for item in lst:
-            item = item.strip(" []\n\r")
-            content[i].append(item)
-        i = i + 1
-    # search by two words, frequency analysis by action, additional constraints
-    counter = []
-    actions = []
-
-    for line in content[1 : len(content) - 1]:
-        c_1 = not search1 and search2 in line[2]
-        c_2 = not search2 and search1 in line[1]
-        c_4 = search1 and search2
-        c_5 = search1 in line[1] and search2 in line[2]
-        c_3 = c_4 and c_5
-
-        if c_1 or c_2 or c_3:
-            if line[0] not in actions:
-                actions.append(line[0])
-                counter.append(1)
-            else:
-                counter[actions.index(line[0])] = counter[actions.index(line[0])] + 1
-
-    if not counter:
-        return None
-
-    # return the max found amongst results
-    return actions[counter.index(max(counter))]
-
-
-def search_translate(word: str) -> str:
-    """Try to get a more readable translation of a programming term.
-    Else try to look up for a translation on the syntax_across_languages file.
-    If both tries fails then return the unchanged word.
-    """
-
-    # syntax from http://rigaux.org/language-study/syntax-across-languages.html#StrngCSTSSASn
-    # first entry is python, rest are other langauges
-    with open(join(get_project_root(), "syntax_across_languages.json"), "r") as file:
-        syntax_across_languages = load(file)
-
-    word = word.lstrip().lower()
-    word = word.replace(SINGLE_QUOTE_CHAR, EMPTY_STRING)
-    readable_data_types = [
-        "integer",
-        "float",
-        "complex",
-        "boolean",
-        "string",
-        "bytes",
-        "list",
-        "tuple",
-        "set",
-        "dictionary",
-    ]
-
-    if word in DATA_TYPES:
-        return readable_data_types[DATA_TYPES.index(word)]
-
-    # search through provided list
-    for syntax in syntax_across_languages:
-        if word in syntax:
-            return syntax[0]
-
-    # if no match, find containing
-    for syntax in syntax_across_languages:
-        for elm in syntax:
-            if word in elm:
-                return syntax[0]
-
-    return word
-
-
 def url_for_error(error_message: str) -> str:
     """Build a valid search url."""
 
     return API_SEARCH_URL + get_query_params(error_message)
-
-
-def get_help(search, packages: defaultdict, datatypes):
-    """Gets help from the Python help()."""
-
-    # TODO: Too many branches, please refactor this method
-
-    changed = False
-    path = "output.txt"
-    lines = help_to_list(path, search)
-
-    if "No Python documentation found for" in lines[0]:
-        lines = []
-    else:
-        lines = help_to_code(search, lines)
-
-    if not lines:
-        for pckg_name in packages["import_name"]:
-            try:
-                pckg = import_module(pckg_name)
-                search_query = pckg.__name__ + "." + search
-                lines = help_to_list(path, search_query)
-                if not lines:
-                    break
-            except:
-                # TODO: what exception should pass?
-                pass
-
-        if not lines:
-            for types in datatypes:
-                search_query = types + "." + search
-                lines = help_to_list(path, search_query)
-                if lines:
-                    break
-    else:
-        changed = True
-
-    if not changed and lines:
-        if "No Python documentation found for" in lines[0]:
-            lines = []
-        else:
-            lines = help_to_code(search, lines)
-
-    return lines
-
-
-def help_to_list(path, search):
-    """Converts the help() format to an easy to use list."""
-
-    with open(path, "w") as file:
-        sys.__stdout__ = sys.stdout
-        sys.stdout = file
-        help(search)
-
-    sys.stdout = sys.__stdout__
-
-    with open(path) as file2:
-        lines = file2.read().splitlines()
-
-    return lines if lines else None
-
-
-def help_to_code(search, lines):
-    """Extracts the code from a list of help() data."""
-    res = []
-
-    if len(lines) <= 2:
-        return res
-
-    if "class " + search in lines[2]:
-        i = 3
-        while lines[i].strip(" |"):
-            res.append(lines[i].strip(" |"))
-            i += 1
-
-    elif search + " = " in lines[2]:
-        res.append(lines[3].strip(" |"))
-
-    if len(res) and not res[0]:
-        del res[0]
-
-    return res
 
 
 def get_quoted_words(error_message: str) -> List[str]:

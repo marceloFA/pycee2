@@ -86,6 +86,8 @@ setup(
     packages=find_packages(exclude=("tests",)),
     # py_modules=["pycee"],
     install_requires=required,
+    scripts=["usage.py"],
+    entry_points={"console_scripts": ["pycee=usage:main"]},
     classifiers=[
         # Trove classifiers
         # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
