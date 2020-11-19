@@ -13,6 +13,10 @@ def get_error_info(script_path):
     """Summarize all error information we have available."""
 
     traceback = get_traceback_from_script(script_path)
+    if not traceback:
+        print("Great! Your code seems to have no errors.")
+        sys.exit(0)
+
     error_message = get_error_message(traceback)
     error_type = get_error_type(error_message)
     error_line = get_error_line(traceback)
@@ -36,7 +40,7 @@ def get_error_info(script_path):
     return error_info
 
 
-def get_traceback_from_script(file_path: str) -> str:
+def get_traceback_from_script(file_path: str) -> Union[str, None]:
     """Get the traceback of a python script directly from the
     standard output (stdout) using a subprocess to execute the script.
 
@@ -53,10 +57,11 @@ def get_traceback_from_script(file_path: str) -> str:
     """
 
     command = "python3 " + str(file_path)
-    subprocess = Popen(command, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
-    stderr = subprocess.stdout.read()
+    subprocess = Popen(command, shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    stderr = subprocess.stderr.read()
     subprocess.kill()
-    return stderr.decode("utf-8")
+
+    return stderr.decode("utf-8") or None
 
 
 def get_error_message(traceback: str) -> Union[str, None]:
