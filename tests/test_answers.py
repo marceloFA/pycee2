@@ -62,8 +62,8 @@ def test_get_questions_skip_unanswered_questions():
     with HTTMock(fake_question_request):
         question_ids, accepted_answer_ids = get_questions(query)
 
-    assert question_ids == []
-    assert accepted_answer_ids == ["64332917"]
+    assert question_ids == tuple()
+    assert accepted_answer_ids == tuple(["64332917"])
 
 
 def test_get_accepted_answers_return_only_one_accepted_answer():
@@ -72,4 +72,4 @@ def test_get_accepted_answers_return_only_one_accepted_answer():
     with HTTMock(fake_answer_request):
         answer_bodies = get_accepted_answers(answer_id)
 
-    assert answer_bodies == ["<p>Installing....</p>\n<pre><code>pip3 install package\n</code></pre>\n"]
+    assert answer_bodies == tuple(["<p>Installing....</p>\n<pre><code>pip3 install package\n</code></pre>\n"])
