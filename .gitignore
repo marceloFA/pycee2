@@ -9,3 +9,8 @@ tests/__pycache__/
 pycee2.egg-info/
 output.txt
 .tool-versions
+
+# ignore cached answers
+pycee/*cache.bak
+pycee/*cache.dat
+pycee/*cache.dir

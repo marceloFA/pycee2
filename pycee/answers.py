@@ -4,10 +4,11 @@
 
 import re
 from keyword import kwlist
-from typing import List
+from typing import List, Tuple
 from difflib import get_close_matches
 
 import requests
+from filecache import filecache, WEEK
 from sumy.nlp.tokenizers import Tokenizer
 from sumy.summarizers.luhn import LuhnSummarizer
 from sumy.parsers.plaintext import PlaintextParser
@@ -37,6 +38,7 @@ def get_answers(query, traceback, offending_line):
     return answers
 
 
+@filecache(WEEK)
 def get_questions(query):
     """This method ask stackexchange API for questions.
     It then return the answers ids for questions with an accepted answer
@@ -60,10 +62,11 @@ def get_questions(query):
             field = str(question["question_id"])
             question_ids.append(field)
 
-    return question_ids, accepted_answer_ids
+    return tuple(question_ids), tuple(accepted_answer_ids)
 
 
-def get_accepted_answers(accepted_answer_ids: List[str]) -> List[str]:
+@filecache(WEEK)
+def get_accepted_answers(accepted_answer_ids: List[str]) -> Tuple[str]:
     """Take an accepted answer id and return the body of it."""
 
     answers_bodies = []
@@ -72,10 +75,11 @@ def get_accepted_answers(accepted_answer_ids: List[str]) -> List[str]:
         answer_body = response.json()["items"][0]["body"]
         answers_bodies.append(answer_body)
 
-    return answers_bodies
+    return tuple(answers_bodies)
 
 
-def get_most_voted_answers(questions_ids: List[str]) -> List[str]:
+@filecache(WEEK)
+def get_most_voted_answers(questions_ids: List[str]) -> Tuple[str]:
     """Take an accepted answer id and return the body of it.
     As we want only the most voted answer, we can order by vote count
     and limit ansers by one.
@@ -89,7 +93,7 @@ def get_most_voted_answers(questions_ids: List[str]) -> List[str]:
         response = requests.get(url.replace("<id>", str(id_)))
         answer_body = response.json()["items"][0]["body"]
         answers_bodies.append(answer_body)
-    return answers_bodies
+    return tuple(answers_bodies)
 
 
 def parse_summarizer(answer_body):
