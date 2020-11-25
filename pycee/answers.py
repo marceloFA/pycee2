@@ -5,6 +5,7 @@
 import re
 from keyword import kwlist
 from typing import List, Tuple
+from operator import attrgetter
 from difflib import get_close_matches
 
 import requests
@@ -15,85 +16,105 @@ from sumy.parsers.plaintext import PlaintextParser
 
 from .utils import SINGLE_SPACE_CHAR, COMMA_CHAR, EMPTY_STRING
 from .utils import BUILTINS, ANSWER_URL, QUESTION_ANSWERS_URL
+from .utils import Question, Answer
 
 
-def get_answers(query, traceback, offending_line):
+def get_answers(query, traceback, offending_line, error_message, cache=True, n_answers=3):
     """This coordinate the answer aquisition process. It goes like this:
-    1- Use the query to check stackexchange API for related questions;
-    2.1- Get answers from questions with accepted answers;
-    2.1- Get most voted answers from questions without accepted answers;
+    1- Use the query to check stackexchange API for related questions
+    2- TODO: If stackoverflow API search engine couldn't find questions, ask Google instead
+    3- For each question, get the most voted and accepted answers
+    4- Sort answers by vote count and limit them
     3- Summarize the answers and make it ready to output to the user;
     """
-    questions_ids, accepted_answer_ids = get_questions(query)
-    accepted_answers_bodies = get_accepted_answers(accepted_answer_ids)
-    other_answers_bodies = get_most_voted_answers(questions_ids)
 
-    answers = []
-    for body in accepted_answers_bodies + other_answers_bodies:
-        code_position = identify_code(body)
-        tester = replace_code(body, code_position, traceback, offending_line)
+    questions = None
+    answers = None
+
+    if cache:
+        questions = cached_ask_stackoverflow(query)
+        answers = cached_answer_content(questions)
+    else:
+        questions = ask_stackoverflow(query)
+        answers = get_answer_content(questions)
+
+    sorted_answers = sorted(answers, key=attrgetter("score"), reverse=True)[:n_answers]
+    summarized_answers = []
+
+    for ans in sorted_answers:
+        # TODO: old logic, should be refactored
+        code_position = identify_code(ans.body)
+        tester = replace_code(ans.body, code_position, traceback, offending_line)
         answer_body = remove_tags(tester)
-        answers.append(answer_body)
+        summarized_answers.append(answer_body)
 
-    return answers
+    return summarized_answers
 
 
-@filecache(WEEK)
-def get_questions(query):
-    """This method ask stackexchange API for questions.
-    It then return the answers ids for questions with an accepted answer
-    and questions ids for questions with no accepted answer.
-    Sorted by vote count."""
+def ask_stackoverflow(query: str) -> Tuple[Question]:
+    """This method ask StackOverflow (so) API for questions."""
 
-    response = requests.get(query)
-    response_json = response.json()
+    response_json = requests.get(query).json()
+    questions = []
 
-    accepted_answer_ids = []
-    question_ids = []
     for question in response_json["items"]:
 
-        if not question["is_answered"]:
-            pass
-        elif "accepted_answer_id" in question:
-            field = str(question["accepted_answer_id"])
-            accepted_answer_ids.append(field)
-        else:
-            # if question has no accepted answer, get most voted answer later
-            field = str(question["question_id"])
-            question_ids.append(field)
+        if question["is_answered"]:
+            questions.append(Question(id=str(question["question_id"]), has_accepted="accepted_answer_id" in question))
 
-    return tuple(question_ids), tuple(accepted_answer_ids)
+    return tuple(questions)
+
+
+def get_answer_content(questions: Tuple[Question]) -> Tuple[Answer]:
+    """Retrieve the most voted and the accepted answers for each question"""
+
+    url = QUESTION_ANSWERS_URL + "&order=desc" + "&sort=votes"
+    answers = []
+
+    for question in questions:
+
+        response = requests.get(url.replace("<id>", str(question.id)))
+        items = response.json()["items"]
+        if not items:
+            continue
+
+        # get most voted answer
+        # first item because results are sorted by score
+        answers.append(
+            Answer(
+                id=str(items[0]["answer_id"]),
+                accepted=items[0]["is_accepted"],
+                score=items[0]["score"],
+                body=items[0]["body"],
+            )
+        )
+
+        # oftentimes the most voted answer
+        # is also the accepted asnwer
+        if items[0]["is_accepted"]:
+            continue
+
+        # get accepted answer
+        if question.has_accepted:
+            # accepted is a filtered list of which the only and first elment is the accepted answer
+            accepted = list(filter(lambda a: a["is_accepted"], items))[0]
+            answers.append(
+                Answer(id=str(accepted["answer_id"]), accepted=True, score=accepted["score"], body=accepted["body"])
+            )
+
+    return tuple(answers)
 
 
 @filecache(WEEK)
-def get_accepted_answers(accepted_answer_ids: List[str]) -> Tuple[str]:
-    """Take an accepted answer id and return the body of it."""
-
-    answers_bodies = []
-    for id_ in accepted_answer_ids:
-        response = requests.get(ANSWER_URL.replace("<id>", str(id_)))
-        answer_body = response.json()["items"][0]["body"]
-        answers_bodies.append(answer_body)
-
-    return tuple(answers_bodies)
+def cached_answer_content(*args, **kwargs):
+    """ get_answer_content decorated with a cache """
+    return get_answer_content(*args, **kwargs)
 
 
 @filecache(WEEK)
-def get_most_voted_answers(questions_ids: List[str]) -> Tuple[str]:
-    """Take an accepted answer id and return the body of it.
-    As we want only the most voted answer, we can order by vote count
-    and limit ansers by one.
-    """
-    page_size = "&pagesize=1"
-    order = "&order=desc"
-    url = QUESTION_ANSWERS_URL + page_size + order
-
-    answers_bodies = []
-    for id_ in questions_ids:
-        response = requests.get(url.replace("<id>", str(id_)))
-        answer_body = response.json()["items"][0]["body"]
-        answers_bodies.append(answer_body)
-    return tuple(answers_bodies)
+def cached_ask_stackoverflow(*args, **kwargs):
+    """ ask_stackoverflow decorated with a cache """
+    return ask_stackoverflow(*args, **kwargs)
 
 
 def parse_summarizer(answer_body):
