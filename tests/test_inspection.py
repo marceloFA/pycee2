@@ -31,12 +31,12 @@ def errorless_file_fixture(tmpdir):
 
 
 @pytest.fixture()
-def traceback_fixture(source_file_fixture, capsys):
+def traceback_fixture(source_file_fixture):
     """ make text content of traceback easily available """
     return get_traceback_from_script(str(source_file_fixture))
 
 
-def test_get_error_info_exit_with_code_0_if_no_error(errorless_file_fixture):
+def test_get_error_info_exit_with_code_0_if_no_error(errorless_file_fixture, capsys):
 
     with pytest.raises(SystemExit) as e:
         get_error_info(str(errorless_file_fixture))
