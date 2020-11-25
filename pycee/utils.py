@@ -1,7 +1,11 @@
 """Some data to be kept apart from application logic."""
 import argparse
+from os import path, remove
+import glob
 from sys import modules
-from os import path
+from collections import namedtuple
+
+from filecache import filecache
 
 
 def create_argparser():
@@ -14,23 +18,38 @@ def create_argparser():
         help="Path to the script that contains the error",
     )
     parser.add_argument(
+        "-q",
+        metavar="--n-questions",
+        type=int,
+        choices=range(1, 6),
+        default=3,
+        dest="n_questions",
+        help="The number of questions to retrieve from Stackoverflow",
+    )
+    parser.add_argument(
         "-a",
         metavar="--n-answers",
-        nargs="?",
-        default=3,
         type=int,
+        choices=range(1, 5),
+        default=3,
         dest="n_answers",
-        help="The number of answers to retrieve from Stackoverflow",
+        help="The number of answers to display",
     )
     parser.add_argument(
         "-s",
         "--stackoverflow-answer",
-        dest="so_answer_only",
-        action="store_true",
+        dest="show_pycee_answer",
+        action="store_false",
+        default=True,
         help="Get answers only from Stackoverflow",
     )
     parser.add_argument(
-        "-p", "--pycee-answer", dest="pycee_answer_only", action="store_true", help="Get answers only from from pycee"
+        "-p",
+        "--pycee-answer",
+        dest="show_so_answer",
+        action="store_false",
+        default=True,
+        help="Get answers only from from pycee",
     )
     parser.add_argument(
         "-d",
@@ -39,8 +58,58 @@ def create_argparser():
         action="store_true",
         help="Return only the stackoverflow query. For test purposes",
     )
+    parser.add_argument(
+        "-r",
+        "--remove-cache",
+        dest="rm_cache",
+        action="store_true",
+        default=False,
+        help="Remove all local cache files",
+    )
+    parser.add_argument(
+        "-f",
+        "--no-cache",
+        dest="cache",
+        action="store_false",
+        default=True,
+        help="Force API requests skipping any local caches",
+    )
 
     return parser
+
+
+def remove_cache():
+    """Util to remove the cache files """
+
+    # the location of file depend on whether using it as pip installed package or not
+    files = glob.glob("./*.cache*") or glob.glob("pycee/*.cache*")
+
+    for file in files:
+        try:
+            remove(file)
+            print(f"Removed {file}")
+        except OSError as e:
+            print("Error: %s : %s" % (file, e.strerror))
+
+    print("Cached removed.\nPlease run pycee again without --remove-cache to get your answers")
+    exit()
+
+
+def print_answers(so_answers, pycee_answer, pydoc_answer, args):
+    """ Hide the logic of printing answers from the usage example """
+
+    if args.show_so_answer:
+
+        if not so_answers:
+            print("Pycee couldn't find answers for the error on Stackoverflow.")
+        else:
+            for i, answer in enumerate(so_answers):
+                print(f"Solution {i}:")
+                print(answer)
+
+    if args.show_pycee_answer:
+        print("\n\nPycee Answer:")
+        print(pycee_answer)
 
 
 # These are some constants we use throughout the codebase
@@ -52,29 +121,15 @@ EMPTY_STRING = ""
 COMMA_CHAR = ","
 
 BASE_URL = "https://api.stackexchange.com/2.2"
-
-
 ANSWER_URL = BASE_URL + "/answers/<id>?site=stackoverflow&filter=withbody"
-
 QUESTION_ANSWERS_URL = BASE_URL + "/questions/<id>/answers?site=stackoverflow&filter=withbody"
-
-# standard python3 datatypes
-DATA_TYPES = [
-    "int",
-    "float",
-    "complex",
-    "bool",
-    "str",
-    "bytes",
-    "list",
-    "tuple",
-    "set",
-    "dict",
-]
 
 # A list of all standard exeptions
 BUILTINS = dir(modules["builtins"])
 
+# namedtuples to represent simple objects
+Question = namedtuple("Question", ["id", "has_accepted"])
+Answer = namedtuple("Answer", ["id", "accepted", "score", "body"])
 
 ERROR_MESSAGES = {
     "KeyError": (
@@ -94,3 +149,17 @@ ERROR_MESSAGES = {
         "\nif this module can be installed using pip like: 'pip install <missing_module>'"
     ),
 }
+
+# standard python3 datatypes
+DATA_TYPES = [
+    "int",
+    "float",
+    "complex",
+    "bool",
+    "str",
+    "bytes",
+    "list",
+    "tuple",
+    "set",
+    "dict",
+]
