@@ -23,7 +23,9 @@ from .utils import (
 API_SEARCH_URL = "https://api.stackexchange.com/2.2/search?site=stackoverflow"
 
 
-def handle_error(error_info: dict, offending_line: str, packages: defaultdict, limit: int) -> str:
+def handle_error(
+    error_info: dict, offending_line: str, packages: defaultdict, limit: int, dry_run: bool = False
+) -> str:
     """Process the incoming error as needed and outputs three possible answer.
     output:
     query: an URL containing an stackoverflow query about the error.
@@ -67,8 +69,10 @@ def handle_error(error_info: dict, offending_line: str, packages: defaultdict, l
     else:
         query = url_for_error(error_message)  # default query
 
-    if query:
-        query = set_limit(query, limit)
+    query = set_limit(query, limit)
+    if dry_run:
+        print(query)
+        exit()
 
     return query, pycee_answer, pydoc_answer
 
@@ -284,7 +288,7 @@ def get_query_params(error_message: str):
 
     error_message_slug = slugify(error_message, separator="+")
     order = "&order=desc"
-    sort = "&sort=votes"
+    sort = "&sort=relevance"
     python_tagged = "&tagged=python"
     intitle = f"&intitle={error_message_slug}"
 

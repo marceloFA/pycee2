@@ -9,19 +9,22 @@ from typing import Union
 from .utils import BUILTINS
 
 
-def get_error_info(script_path):
+def get_error_info(file_path, stderr=None):
     """Summarize all error information we have available."""
 
-    traceback = get_traceback_from_script(script_path)
-    if not traceback:
-        print("Great! Your code seems to have no errors.")
-        sys.exit(0)
+    if stderr:
+        traceback = stderr
+    else:
+        traceback = get_traceback_from_script(file_path)
+        if not traceback:
+            print("Great! Your code seems to have no errors.")
+            sys.exit(0)
 
     error_message = get_error_message(traceback)
     error_type = get_error_type(error_message)
     error_line = get_error_line(traceback)
     file_name = get_file_name(traceback)
-    code = get_code(file_name)
+    code = get_code(file_path)
 
     error_info = {
         "traceback": traceback,

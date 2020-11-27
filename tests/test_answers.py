@@ -1,75 +1,108 @@
 from httmock import all_requests, HTTMock
-from pycee.answers import get_questions, get_accepted_answers
-from pycee.utils import ANSWER_URL
+from pycee.answers import ask_stackoverflow, get_answer_content
+from pycee.utils import ANSWER_URL, Question, Answer
 
 
 # data resources
-questions = {
+fake_query = "http://fakeurl.com"
+empty_questions = {"items": []}
+empty_answers = {"items": []}
+
+questions_data = {
     "items": [
         {
             "is_answered": True,
-            "view_count": 65,
-            "accepted_answer_id": 64332917,
+            "accepted_answer_id": 4,
             "answer_count": 1,
-            "score": 2,
-            "question_id": 64293904,
+            "question_id": 1,
         },
         {
             "is_answered": False,
-            "view_count": 58,
             "answer_count": 0,
             "score": 0,
-            "question_id": 61509047,
-        },
-        {
-            "is_answered": False,
-            "view_count": 65,
-            "answer_count": 0,
-            "score": 0,
-            "question_id": 64164644,
+            "question_id": 2,
         },
     ]
 }
-
-fake_answer_id = 999999
-answers = {
+answers_data = {
     "items": [
         {
+            "is_accepted": False,
+            "score": 20,
+            "answer_id": 4,
+            "question_id": 1,
+            "body": "Body 4",
+        },
+        {
             "is_accepted": True,
-            "score": 0,
-            "answer_id": fake_answer_id,
-            "question_id": 64293904,
-            "body": "<p>Installing....</p>\n<pre><code>pip3 install package\n</code></pre>\n",
-        }
+            "score": 10,
+            "answer_id": 3,
+            "question_id": 1,
+            "body": "Body 3",
+        },
+        {
+            "is_accepted": False,
+            "score": 5,
+            "answer_id": 5,
+            "question_id": 1,
+            "body": "Body 5",
+        },
     ]
 }
 
-
-@all_requests
-def fake_question_request(url, request):
-    return {"status_code": 200, "content": questions}
+# mocks
 
 
 @all_requests
-def fake_answer_request(url, request):
-    return {"status_code": 200, "content": answers}
+def question_response(url, request):
+    return {"status_code": 200, "content": questions_data}
 
 
-def test_get_questions_skip_unanswered_questions():
-
-    # in the real application this is a real query to the stackexchange api
-    query = "http://fakeurl.com"
-    with HTTMock(fake_question_request):
-        question_ids, accepted_answer_ids = get_questions(query)
-
-    assert question_ids == tuple()
-    assert accepted_answer_ids == tuple(["64332917"])
+@all_requests
+def empty_question_response(url, request):
+    return {"status_code": 200, "content": empty_questions}
 
 
-def test_get_accepted_answers_return_only_one_accepted_answer():
+@all_requests
+def answer_response(url, request):
+    return {"status_code": 200, "content": answers_data}
 
-    answer_id = [fake_answer_id]
-    with HTTMock(fake_answer_request):
-        answer_bodies = get_accepted_answers(answer_id)
 
-    assert answer_bodies == tuple(["<p>Installing....</p>\n<pre><code>pip3 install package\n</code></pre>\n"])
+@all_requests
+def empty_answers_response(url, request):
+    return {"status_code": 200, "content": empty_answers}
+
+
+# tests
+
+
+def test_ask_stackoverflow_skip_unanswered_questions():
+
+    question_obj = tuple([Question(id="1", has_accepted=True)])
+    with HTTMock(question_response):
+        questions = ask_stackoverflow(fake_query)
+    assert questions == question_obj
+
+
+def test_ask_stackoverflow_can_handle_empty_response():
+
+    with HTTMock(empty_question_response):
+        questions = ask_stackoverflow(fake_query)
+    assert questions == tuple([])
+
+
+def test_get_answer_content_from_one_question():
+
+    question_obj = tuple([Question(id=1, has_accepted=True)])
+    with HTTMock(answer_response):
+        answers = get_answer_content(question_obj)
+
+    assert answers == tuple([Answer("4", False, 20, "Body 4"), Answer("3", True, 10, "Body 3")])
+
+
+def test_get_answer_content_handle_empty_response():
+
+    question_obj = tuple([Question(id=1, has_accepted=True)])
+    with HTTMock(empty_answers_response):
+        questions = get_answer_content(question_obj)
+    assert questions == tuple([])
