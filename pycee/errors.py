@@ -49,6 +49,7 @@ def handle_error(
         query = handle_indentation_error(error_message)
 
     elif error_type == "IndexError":
+        pycee_answer = handle_index_error_locally(error_message, error_info["line"])
         query = handle_index_error(error_message)
 
     elif error_type == "ModuleNotFoundError":
@@ -172,8 +173,26 @@ def handle_attr_error(error_message):
 
 def handle_indentation_error(error_message):
     """Process an IndentationError."""
+
     message = remove_exception_from_error_message(error_message)
     return url_for_error(message)
+
+
+def handle_index_error_locally(error_message: str, error_line: int) -> str:
+    """Process an IndexError locally."""
+
+    sequence = None
+    if "list" in error_message:
+        sequence = "list"
+    elif "tuple" in error_message:
+        sequence = "tuple"
+    elif "range object" in error_message:
+        sequence = "range object"
+
+    answer = ERROR_MESSAGES["IndexError"].replace("<sequence>", sequence)
+    answer = answer.replace("<line>", str(error_line))
+
+    return answer
 
 
 def handle_index_error(message):

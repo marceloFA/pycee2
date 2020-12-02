@@ -108,7 +108,7 @@ def print_answers(so_answers, pycee_answer, pydoc_answer, args):
                 print(answer)
 
     if args.show_pycee_answer:
-        print("\n\nPycee Answer:")
+        print("Pycee Answer:")
         print(pycee_answer)
 
 
@@ -147,6 +147,12 @@ ERROR_MESSAGES = {
         "A module (library) named '<missing_module>' is missing."
         "\nYou might want to check if this is a valid module name or"
         "\nif this module can be installed using pip like: 'pip install <missing_module>'"
+    ),
+    "IndexError": (
+        "You tried to acess an index that does not exist in a <sequence> at line <line>."
+        "\nAn IndexError happens when asking for non existing indexes values of sequences."
+        "\nSequences can be lists, tuples and range objects."
+        "\nTo fix this make sure that the index value is valid."
     ),
 }
 
