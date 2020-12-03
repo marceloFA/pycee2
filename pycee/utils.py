@@ -2,13 +2,13 @@
 import argparse
 from os import path, remove
 import glob
-from sys import modules
+from sys import modules, argv
 from collections import namedtuple
 
 from filecache import filecache
 
 
-def create_argparser():
+def parse_args(args=argv[1:]):
     """A simple argparser to be used when pycee is executed as a script."""
 
     parser = argparse.ArgumentParser("pycee2", description="Pycee is a tool to provide user friendly error messages.")
@@ -59,7 +59,7 @@ def create_argparser():
         help="Return only the stackoverflow query. For test purposes",
     )
     parser.add_argument(
-        "-r",
+        "-rm",
         "--remove-cache",
         dest="rm_cache",
         action="store_true",
@@ -72,17 +72,17 @@ def create_argparser():
         dest="cache",
         action="store_false",
         default=True,
-        help="Force API requests skipping any local caches",
+        help="Force API requests by skipping any local caches",
     )
 
-    return parser
+    return parser.parse_args(args)
 
 
 def remove_cache():
     """Util to remove the cache files """
 
     # the location of file depend on whether using it as pip installed package or not
-    files = glob.glob("./*.cache*") or glob.glob("pycee/*.cache*")
+    files = glob.glob("*.cache*") + glob.glob("pycee/*.cache*")
 
     for file in files:
         try:
@@ -91,7 +91,7 @@ def remove_cache():
         except OSError as e:
             print("Error: %s : %s" % (file, e.strerror))
 
-    print("Cached removed.\nPlease run pycee again without --remove-cache to get your answers")
+    print("Cache removed!\nPlease run pycee again without --remove-cache argument to get your answers")
     exit()
 
 
