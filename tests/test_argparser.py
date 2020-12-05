@@ -23,29 +23,43 @@ def test_negative_number_of_questions_raises_sys_exit(capsys):
 
 
 def test_store_boolean_args():
-    # tests that boolean arguemets are changes as needed
-    default_args = Namespace(
+    # tests that boolean arguements can change as expected
+
+    expected_args = Namespace(
+        file_name="foo.py",  # mandatory
         cache=False,  # default is True
         dry_run=True,  # default is False
-        file_name="foo.py",  # not an default arg, actually
-        n_answers=3,
-        n_questions=3,
         rm_cache=True,  # default is False
         show_pycee_answer=False,  # default is True
         show_so_answer=False,  # default is True
     )
-    assert parse_args(["foo.py", "--no-cache", "--dry-run", "-rm", "-s", "-p"]) == default_args
+    parsed_args = parse_args(["foo.py", "-f", "--dry-run", "-rm", "-s", "-p"])
+
+    assert parsed_args.cache == expected_args.cache
+    assert parsed_args.dry_run == expected_args.dry_run
+    assert parsed_args.rm_cache == expected_args.rm_cache
+    assert parsed_args.show_pycee_answer == expected_args.show_pycee_answer
+    assert parsed_args.show_so_answer == expected_args.show_so_answer
 
 
 def test_default_args():
-    default_args = Namespace(
-        cache=True,
-        dry_run=False,
+    expected_args = Namespace(
         file_name="foo.py",  # not an default arg, actually
         n_answers=3,
         n_questions=3,
+        cache=True,
+        dry_run=False,
         rm_cache=False,
         show_pycee_answer=True,
         show_so_answer=True,
     )
-    assert parse_args(["foo.py"]) == default_args
+    parsed_args = parse_args(["foo.py"])
+
+    assert parsed_args.file_name == expected_args.file_name
+    assert parsed_args.n_answers == expected_args.n_answers
+    assert parsed_args.n_questions == expected_args.n_questions
+    assert parsed_args.cache == expected_args.cache
+    assert parsed_args.dry_run == expected_args.dry_run
+    assert parsed_args.rm_cache == expected_args.rm_cache
+    assert parsed_args.show_pycee_answer == expected_args.show_pycee_answer
+    assert parsed_args.show_so_answer == expected_args.show_so_answer
