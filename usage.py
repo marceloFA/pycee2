@@ -2,14 +2,14 @@ from pycee.answers import get_answers
 from pycee.errors import handle_error
 from pycee.inspection import get_error_info, get_packages
 from pycee.sym_table import get_offending_line
-from pycee.utils import create_argparser, remove_cache, print_answers
+from pycee.utils import parse_args, remove_cache, print_answers
 
 
 def main():
-    args = create_argparser().parse_args()
+
+    args = parse_args()
     if args.rm_cache:
         remove_cache()
-
     error_info = get_error_info(args.file_name)
     offending_line = get_offending_line(error_info)
     packages = get_packages(error_info["code"])
