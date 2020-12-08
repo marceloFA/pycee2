@@ -32,6 +32,10 @@ answers_data = {
             "answer_id": 4,
             "question_id": 1,
             "body": "Body 4",
+            "owner": {
+                "display_name": "author 4",
+                "profile_image": "foo 4",
+            },
         },
         {
             "is_accepted": True,
@@ -39,6 +43,10 @@ answers_data = {
             "answer_id": 3,
             "question_id": 1,
             "body": "Body 3",
+            "owner": {
+                "display_name": "author 3",
+                "profile_image": "foo 3",
+            },
         },
         {
             "is_accepted": False,
@@ -46,6 +54,10 @@ answers_data = {
             "answer_id": 5,
             "question_id": 1,
             "body": "Body 5",
+            "owner": {
+                "display_name": "author 5",
+                "profile_image": "foo 5",
+            },
         },
     ]
 }
@@ -97,7 +109,11 @@ def test_get_answer_content_from_one_question():
     with HTTMock(answer_response):
         answers = get_answer_content(question_obj)
 
-    assert answers == tuple([Answer("4", False, 20, "Body 4"), Answer("3", True, 10, "Body 3")])
+    expected_answers = [
+        Answer(id="4", accepted=False, score=20, body="Body 4", author="author 4", profile_image="foo 4"),
+        Answer(id="3", accepted=True, score=10, body="Body 3", author="author 3", profile_image="foo 3"),
+    ]
+    assert answers == tuple(expected_answers)
 
 
 def test_get_answer_content_handle_empty_response():
