@@ -48,7 +48,7 @@ def get_answers(query, traceback, offending_line, error_message, cache=True, n_a
         answer_body = remove_tags(tester)
         summarized_answers.append(answer_body)
 
-    return summarized_answers
+    return summarized_answers, sorted_answers
 
 
 def ask_stackoverflow(query: str) -> Tuple[Question]:
@@ -75,6 +75,7 @@ def get_answer_content(questions: Tuple[Question]) -> Tuple[Answer]:
 
         response = requests.get(url.replace("<id>", str(question.id)))
         items = response.json()["items"]
+
         if not items:
             continue
 
@@ -86,6 +87,8 @@ def get_answer_content(questions: Tuple[Question]) -> Tuple[Answer]:
                 accepted=items[0]["is_accepted"],
                 score=items[0]["score"],
                 body=items[0]["body"],
+                author=items[0]["owner"]["display_name"],
+                profile_image=items[0]["owner"]["profile_image"],
             )
         )
 
@@ -99,7 +102,14 @@ def get_answer_content(questions: Tuple[Question]) -> Tuple[Answer]:
             # accepted is a filtered list of which the only and first elment is the accepted answer
             accepted = list(filter(lambda a: a["is_accepted"], items))[0]
             answers.append(
-                Answer(id=str(accepted["answer_id"]), accepted=True, score=accepted["score"], body=accepted["body"])
+                Answer(
+                    id=str(accepted["answer_id"]),
+                    accepted=True,
+                    score=accepted["score"],
+                    body=accepted["body"],
+                    author=accepted["owner"]["display_name"],
+                    profile_image=accepted["owner"]["profile_image"],
+                )
             )
 
     return tuple(answers)

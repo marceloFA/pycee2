@@ -129,7 +129,7 @@ BUILTINS = dir(modules["builtins"])
 
 # namedtuples to represent simple objects
 Question = namedtuple("Question", ["id", "has_accepted"])
-Answer = namedtuple("Answer", ["id", "accepted", "score", "body"])
+Answer = namedtuple("Answer", ["id", "accepted", "score", "body", "author", "profile_image"])
 
 ERROR_MESSAGES = {
     "KeyError": (

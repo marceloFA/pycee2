@@ -16,7 +16,7 @@ def main():
     query, pycee_answer, pydoc_answer = handle_error(
         error_info, offending_line, packages, limit=args.n_questions, dry_run=args.dry_run
     )
-    so_answers = get_answers(
+    so_answers, _ = get_answers(
         query,
         error_info["traceback"],
         offending_line,
