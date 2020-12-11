@@ -5,6 +5,7 @@ import glob
 from sys import modules, argv
 from collections import namedtuple
 
+from consolemd import Renderer
 from filecache import filecache
 
 
@@ -38,14 +39,14 @@ def parse_args(args=argv[1:]):
     parser.add_argument(
         "-s",
         "--stackoverflow-answer",
-        dest="show_pycee_answer",
+        dest="show_pycee_hint",
         action="store_false",
         default=True,
         help="Get answers only from Stackoverflow",
     )
     parser.add_argument(
         "-p",
-        "--pycee-answer",
+        "--pycee-hint",
         dest="show_so_answer",
         action="store_false",
         default=True,
@@ -95,21 +96,25 @@ def remove_cache():
     exit()
 
 
-def print_answers(so_answers, pycee_answer, pydoc_answer, args):
+def print_answers(so_answers, pycee_hint, pydoc_answer, args):
     """ Hide the logic of printing answers from the usage example """
 
     if args.show_so_answer:
 
         if not so_answers:
-            print("Pycee couldn't find answers for the error on Stackoverflow.")
+            print("\nPycee couldn't find answers for the error on Stackoverflow.")
         else:
+            renderer = Renderer()
             for i, answer in enumerate(so_answers):
-                print(f"Solution {i}:")
-                print(answer)
+                print(f"\nSolution {i}:")
+                renderer.render(answer)
 
-    if args.show_pycee_answer:
-        print("Pycee Answer:")
-        print(pycee_answer)
+    if args.show_pycee_hint:
+        if not pycee_hint:
+            print("\nPycee does not have an hint for fixing this error on its manuals.")
+        else:
+            print("\nPycee Answer:")
+            print(pycee_hint)
 
 
 # These are some constants we use throughout the codebase
@@ -121,6 +126,7 @@ EMPTY_STRING = ""
 COMMA_CHAR = ","
 
 BASE_URL = "https://api.stackexchange.com/2.2"
+API_SEARCH_URL = BASE_URL + "/search?site=stackoverflow"
 ANSWER_URL = BASE_URL + "/answers/<id>?site=stackoverflow&filter=withbody"
 QUESTION_ANSWERS_URL = BASE_URL + "/questions/<id>/answers?site=stackoverflow&filter=withbody"
 
@@ -130,8 +136,7 @@ BUILTINS = dir(modules["builtins"])
 # namedtuples to represent simple objects
 Question = namedtuple("Question", ["id", "has_accepted"])
 Answer = namedtuple("Answer", ["id", "accepted", "score", "body", "author", "profile_image"])
-
-ERROR_MESSAGES = {
+HINT_MESSAGES = {
     "KeyError": (
         "<initial_error>\n\nKeyError exceptions are raised to the user when a key is not found in a dictionary."
         "\nTo solve this error you may want to define a key with value <key> in the dictionary."
@@ -153,6 +158,21 @@ ERROR_MESSAGES = {
         "\nAn IndexError happens when asking for non existing indexes values of sequences."
         "\nSequences can be lists, tuples and range objects."
         "\nTo fix this make sure that the index value is valid."
+    ),
+    "SyntaxError": (
+        "You have a syntax error somewehre arround line <line>"
+        "\nGenerally, syntax errors occurs when multiple code statements are interpreted as if they were one."
+        "\nThis may be caused by several simple issues, below is a list of them."
+        "\nYou should check if your code contains any of these issues."
+        "\n"
+        "\n1- Make sure that any strings in the code have matching quotation marks."
+        "\n2- An unclosed bracket – (, {, or [ – makes Python continue with the next line as part of the current statement."
+        "\n   Generally, an error occurs almost immediately in the next line."
+        "\n3- Make sure you are not using a Python keyword for a variable name."
+        "\n4- Check that you have a colon at the end of the header of every compound statement,"
+        "\n   including for, while, if, and def statements."
+        "\n5- Check for the classic '=' instead of '==' in a conditional statement."
+        "\nSource: https://www.openbookproject.net/thinkcs/python/english2e/app_a.html"
     ),
 }
 
