@@ -1,6 +1,7 @@
 """This module will inspect the error source code and the error log."""
 import re
 import sys
+from pprint import pprint
 from dis import get_instructions
 from collections import defaultdict
 from subprocess import Popen, PIPE, STDOUT
@@ -25,6 +26,7 @@ def get_error_info(file_path, stderr=None):
     error_line = get_error_line(traceback)
     file_name = get_file_name(traceback)
     code = get_code(file_path)
+    offending_line = get_offending_line(error_line, code)
 
     error_info = {
         "traceback": traceback,
@@ -33,11 +35,12 @@ def get_error_info(file_path, stderr=None):
         "line": error_line,
         "file": file_name,
         "code": code,
+        "offending_line": offending_line,
     }
 
     if not all(error_info.values()):
         print("Aborting. Some data about the error is missing:")
-        print(error_info)
+        pprint(error_info)
         sys.exit(-1)
 
     return error_info
@@ -161,6 +164,21 @@ def get_code(file_path: str) -> str:
     with open(file_path, "r") as file:
         code = file.read()
     return code
+
+
+def get_offending_line(error_line: int, code: str) -> str:
+    """Extracts the offending line"""
+
+    error_line -= 1
+    code_lines = code.splitlines()
+    offending_line = None
+
+    try:
+        offending_line = code_lines[error_line]
+    except IndexError:
+        offending_line = code_lines[-1]
+
+    return offending_line
 
 
 def get_packages(code: str) -> defaultdict:
