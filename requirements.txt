@@ -1,6 +1,7 @@
 requests
 sumy
 html5lib
-pyminifier
 python-slugify
 filecache
+html2text
+consolemd
