@@ -10,6 +10,7 @@ from pycee.inspection import (
     get_file_name,
     get_code,
     get_packages,
+    get_offending_line,
 )
 
 
@@ -85,9 +86,46 @@ def test_get_file_name(source_file_fixture, traceback_fixture):
     assert file_name == str(source_file_fixture)
 
 
-def test_get_code(source_file_fixture, traceback_fixture):
+def test_get_code(source_file_fixture):
 
     assert get_code(str(source_file_fixture)) == source_file_fixture.read()
+
+
+def test_get_offending_line_module_error(traceback_fixture, source_file_fixture):
+
+    error_line = get_error_line(traceback_fixture)
+    print(error_line)
+    code = get_code(str(source_file_fixture))
+    offending_line = get_offending_line(error_line, code)
+    assert offending_line == "import not_a_module"
+
+
+def test_get_offending_line_attr_error():
+    error_line = 8
+    code = "import os\nimport math\n\n\nprint(os.getcwd())\nprint(math.pi)\nmath.dir\n"
+    offending_line = get_offending_line(error_line, code)
+    assert offending_line == "math.dir"
+
+
+def test_get_offending_line_type_error():
+    error_line = 9
+    code = "import os\nimport math\n\n\nprint(os.getcwd())\nprint(math.pi)\n\n# will raise an typeerror\nmath.pi + 'not an int'\n\n\n\n# just for testing purposes\n\n\n"
+    offending_line = get_offending_line(error_line, code)
+    assert offending_line == "math.pi + 'not an int'"
+
+
+def test_get_offending_line_syntax_error_EOL_literal():
+    error_line = 10
+    code = "import os\nimport math\n\n\nprint(os.getcwd())\nprint(math.pi)\n\n# will raise an syntax error\n\nprint('error)\n\n\n# just for testing purposes\n\n\n"
+    offending_line = get_offending_line(error_line, code)
+    assert offending_line == "print('error)"
+
+
+def test_get_offending_line_syntax_error_generic():
+    error_line = 8
+    code = "import os\nimport math\n\n\nprint(os.getcwd())\nprint(math.pi)\n\ndef foo(bar)\n    pass\n\n# just for testing purposes\n\n\n"
+    offending_line = get_offending_line(error_line, code)
+    assert offending_line == "def foo(bar)"
 
 
 def test_get_packages():

@@ -1,7 +1,7 @@
 import pytest
 
 from pycee.errors import handle_key_error_locally
-from pycee.utils import ERROR_MESSAGES
+from pycee.utils import HINT_MESSAGES
 
 
 @pytest.mark.parametrize(
@@ -50,7 +50,7 @@ from pycee.utils import ERROR_MESSAGES
     ],
 )
 def test_handle_key_error_with_known_target(error_message, offending_line, expected, monkeypatch):
-    monkeypatch.setitem(ERROR_MESSAGES, "KeyError", "<initial_error>")
+    monkeypatch.setitem(HINT_MESSAGES, "KeyError", "<initial_error>")
     assert handle_key_error_locally(error_message, offending_line) == expected
 
 
@@ -80,5 +80,5 @@ def test_handle_key_error_with_known_target(error_message, offending_line, expec
     ],
 )
 def test_handle_key_error_with_unknown_target(error_message, offending_line, expected, monkeypatch):
-    monkeypatch.setitem(ERROR_MESSAGES, "KeyError", "<initial_error>")
+    monkeypatch.setitem(HINT_MESSAGES, "KeyError", "<initial_error>")
     assert handle_key_error_locally(error_message, offending_line) == expected
