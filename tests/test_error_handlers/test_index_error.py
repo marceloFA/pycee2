@@ -1,7 +1,7 @@
 import pytest
 
 from pycee.errors import handle_index_error_locally
-from pycee.utils import ERROR_MESSAGES
+from pycee.utils import HINT_MESSAGES
 
 
 @pytest.mark.parametrize(
@@ -13,5 +13,5 @@ from pycee.utils import ERROR_MESSAGES
     ],
 )
 def test_index_error_locally(error_message, error_line, sequence, monkeypatch):
-    monkeypatch.setitem(ERROR_MESSAGES, "IndexError", "<sequence> <line>")
+    monkeypatch.setitem(HINT_MESSAGES, "IndexError", "<sequence> <line>")
     assert handle_index_error_locally(error_message, error_line) == f"{sequence} {error_line}"

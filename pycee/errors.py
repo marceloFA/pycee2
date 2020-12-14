@@ -11,7 +11,7 @@ from difflib import get_close_matches
 
 from slugify import slugify
 
-from .utils import DATA_TYPES, BUILTINS, ERROR_MESSAGES
+from .utils import DATA_TYPES, BUILTINS, HINT_MESSAGES, API_SEARCH_URL
 from .utils import (
     SINGLE_QUOTE_CHAR,
     DOUBLE_QUOTE_CHAR,
@@ -19,28 +19,24 @@ from .utils import (
     EMPTY_STRING,
 )
 
-# Stack Overflow URL for scraping
-API_SEARCH_URL = "https://api.stackexchange.com/2.2/search?site=stackoverflow"
 
-
-def handle_error(
-    error_info: dict, offending_line: str, packages: defaultdict, limit: int, dry_run: bool = False
-) -> str:
+def handle_error(error_info: dict, n_questions: int, dry_run: bool = False) -> str:
     """Process the incoming error as needed and outputs three possible answer.
     output:
     query: an URL containing an stackoverflow query about the error.
-    pycee_answer: A possible answer for the error produced locally.
+    pycee_hint: A possible answer for the error produced locally.
     TODO: pydoc_answer: A possible answer extracted from the builtin help.
     """
 
     query = None
     pydoc_answer = None
-    pycee_answer = None
+    pycee_hint = None
     error_type = error_info["type"]
     error_message = error_info["message"]
 
     if error_type == "SyntaxError":
-        query = handle_syntax_error(offending_line)
+        pycee_hint = handle_syntax_error_locally(error_info["message"], error_info["line"])
+        query = handle_syntax_error(error_info["message"])
 
     elif error_type == "TabError":
         query = handle_tab_error(error_message)
@@ -49,40 +45,41 @@ def handle_error(
         query = handle_indentation_error(error_message)
 
     elif error_type == "IndexError":
-        pycee_answer = handle_index_error_locally(error_message, error_info["line"])
+        pycee_hint = handle_index_error_locally(error_message, error_info["line"])
         query = handle_index_error(error_message)
 
     elif error_type == "ModuleNotFoundError":
-        pycee_answer = handle_module_error_locally(error_message)
+        pycee_hint = handle_module_error_locally(error_message)
         query = handle_module_not_found_error(error_message)
 
     elif error_type == "KeyError":
-        pycee_answer = handle_key_error_locally(error_message, offending_line)
+        pycee_hint = handle_key_error_locally(error_message, error_info["offending_line"])
         query = handle_key_error(error_message)
 
     elif error_type == "AttributeError":
         query = handle_attr_error(error_message)
 
     elif error_type == "NameError":
-        pycee_answer = handle_name_error_locally(error_message)
+        pycee_hint = handle_name_error_locally(error_message)
         query = handle_name_error(error_message)
 
     else:
         query = url_for_error(error_message)  # default query
 
-    query = set_limit(query, limit)
+    query = set_pagesize(query, n_questions) if query else None
+
     if dry_run:
         print(query)
         exit()
 
-    return query, pycee_answer, pydoc_answer
+    return query, pycee_hint, pydoc_answer
 
 
 def handle_key_error_locally(error_message: str, offending_line: str) -> str:
     """When KeyError is handled locally we remind the user that the problematic
     dict should have a key with a certain value."""
 
-    answer = ERROR_MESSAGES["KeyError"]
+    hint = HINT_MESSAGES["KeyError"]
     missing_key = error_message.split(SINGLE_SPACE_CHAR, maxsplit=1)[-1]
 
     # this first regex will match part of the pattern of a dict acess: a_dict[some_value]
@@ -100,20 +97,20 @@ def handle_key_error_locally(error_message: str, offending_line: str) -> str:
     target = indentifiers[0] if len(set(indentifiers)) == 1 else None
 
     if target:
-        answer = answer.replace(
+        hint = hint.replace(
             "<initial_error>",
             f"Dictionary '{target}' does not have a key with value {missing_key}.",
         )
-        answer = answer.replace("<key>", missing_key)
+        hint = hint.replace("<key>", missing_key)
     else:
         formatted_identifiers = ", ".join(indentifiers)
-        answer = answer.replace(
+        hint = hint.replace(
             "<initial_error>",
             f"One of dictionaries {formatted_identifiers} does not have a key with value {missing_key}.",
         )
-        answer = answer.replace("<key>", missing_key)
+        hint = hint.replace("<key>", missing_key)
 
-    return answer
+    return hint
 
 
 def handle_key_error(error_message: str) -> str:
@@ -128,8 +125,8 @@ def handle_name_error_locally(error_message: str) -> str:
     accidentally forget to define a variable or misspelled its name."""
 
     missing_name = get_quoted_words(error_message)[0]
-    answer = ERROR_MESSAGES["NameError"].replace("<missing_name>", missing_name)
-    return answer
+    hint = HINT_MESSAGES["NameError"].replace("<missing_name>", missing_name)
+    return hint
 
 
 def handle_name_error(error_message: str):
@@ -151,8 +148,8 @@ def handle_module_error_locally(error_message):
     if it's installable though pip"""
 
     missing_module = get_quoted_words(error_message)[0]
-    answer = ERROR_MESSAGES["ModuleNotFoundError"].replace("<missing_module>", missing_module)
-    return answer
+    hint = HINT_MESSAGES["ModuleNotFoundError"].replace("<missing_module>", missing_module)
+    return hint
 
 
 def handle_module_not_found_error(error_message):
@@ -160,6 +157,36 @@ def handle_module_not_found_error(error_message):
     already have questions on ModuleNotFoundError solved at stackoverflow"""
 
     message = error_message.replace("ModuleNotFoundError", EMPTY_STRING)
+    return url_for_error(message)
+
+
+def handle_index_error_locally(error_message: str, error_line: int) -> str:
+    """Process an IndexError locally."""
+
+    sequence = None
+    if "list" in error_message:
+        sequence = "list"
+    elif "tuple" in error_message:
+        sequence = "tuple"
+    elif "range object" in error_message:
+        sequence = "range object"
+
+    hint = HINT_MESSAGES["IndexError"].replace("<sequence>", sequence)
+    hint = hint.replace("<line>", str(error_line))
+
+    return hint
+
+
+def handle_index_error(message):
+    """Process an IndexError."""
+
+    to_remove = " cannot be "
+    if to_remove in message:
+        message = message.replace(to_remove, EMPTY_STRING)
+
+    message = message.replace("IndexError:", "index error")
+    message = slugify(message, separator="+")
+
     return url_for_error(message)
 
 
@@ -178,79 +205,26 @@ def handle_indentation_error(error_message):
     return url_for_error(message)
 
 
-def handle_index_error_locally(error_message: str, error_line: int) -> str:
-    """Process an IndexError locally."""
+def handle_syntax_error_locally(error_message: str, error_line: int) -> Union[str, None]:
+    """ Process a SyntaxError locally """
 
-    sequence = None
-    if "list" in error_message:
-        sequence = "list"
-    elif "tuple" in error_message:
-        sequence = "tuple"
-    elif "range object" in error_message:
-        sequence = "range object"
-
-    answer = ERROR_MESSAGES["IndexError"].replace("<sequence>", sequence)
-    answer = answer.replace("<line>", str(error_line))
+    answer = None
+    if error_message == "SyntaxError: invalid syntax":
+        answer = HINT_MESSAGES["SyntaxError"].replace("<line>", str(error_line))
 
     return answer
 
 
-def handle_index_error(message):
-    """Process an IndexError."""
+def handle_syntax_error(error_message: str) -> Union[str, None]:
+    """Process a SyntaxError """
 
-    to_remove = " cannot be "
-    if to_remove in message:
-        message = message.replace(to_remove, EMPTY_STRING)
-
-    message = message.replace("IndexError:", "index error")
-    message = slugify(message, separator="+")
-
-    return url_for_error(message)
-
-
-def handle_syntax_error(offending_line):
-    """ docstring later on. need to be refactored. """
-
-    # unmathcing number of quotation marks error
-    single = offending_line.count(SINGLE_QUOTE_CHAR)
-    double = offending_line.count(DOUBLE_QUOTE_CHAR)
-
-    if (single + double) % 2 == 1:
-        return url_for_error("quotation marks")
-
-    # unmathcing number of parenthese, brackets or braces error
-    opening_brackets = offending_line.count("(") + offending_line.count("[") + offending_line.count("{")
-    closing_bracket = offending_line.count(")") + offending_line.count("]") + offending_line.count("}")
-
-    if opening_brackets != closing_bracket:
-        return url_for_error("bracket meanings")
-
-    # split offendingline and remove symbols
-    # what does this matches?
-    regex = r"[!@#$%^&*_\-+=\(\)\[\]\{\}\\|~`/?.,<>:; ]"
-    tokens = re.split(regex, offending_line)
-    # remove strings/quotes
-    for token in tokens:
-        if (SINGLE_QUOTE_CHAR in token) or (DOUBLE_QUOTE_CHAR in token):
-            tokens.remove(token)
-    # then find possibilites for each word
-    possibilites = []
-    for token in tokens:
-        possible = []
-        possible.extend(get_close_matches(token.lower(), kwlist, 3, 0.6))
-        possible.extend(get_close_matches(token.lower(), BUILTINS, 3, 0.6))
-
-        # if exact match, only keep that word
-        flag = False
-        for word in possible:
-            if word == token:
-                possibilites.append(word)
-                flag = True
-        if not flag:
-            possibilites.extend(possible)
-
-    query = check_tokens_for_query(possibilites)
-    return url_for_error(query)
+    # if a generic SyntaxError happens
+    # it's quite tricky to catch the right offending line
+    if error_message == "SyntaxError: invalid syntax":
+        return None
+    else:
+        error = slugify(error_message, separator="+")
+        return url_for_error(error)
 
 
 def handle_tab_error(error_message):
@@ -295,11 +269,9 @@ def check_tokens_for_query(tokens: List) -> str:
 # Helper methods below
 
 
-def set_limit(query: str, limit: int) -> str:
+def set_pagesize(query: str, pagesize: int) -> str:
     """Set the number of questions we want from Stackoverflow."""
-
-    limit_param = f"&pagesize={limit}"
-    return query + limit_param
+    return query + f"&pagesize={pagesize}"
 
 
 def get_query_params(error_message: str):

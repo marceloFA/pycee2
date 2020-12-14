@@ -3,7 +3,6 @@ from typing import List
 import re
 
 from symtable import symtable
-from pyminifier.minification import remove_comments_and_docstrings
 
 
 def trim_and_split_code(code: str, error_line: str) -> List[str]:
@@ -20,26 +19,6 @@ def trim_and_split_code(code: str, error_line: str) -> List[str]:
         trimmed_code = code[0]
 
     return trimmed_code
-
-
-def get_offending_line(error_info):
-    """Gets the offending line."""
-
-    offending_line = None
-    is_syntax_error = error_info["type"] == "SyntaxError"
-    code_lines = error_info["code"].split("\n")
-    error_line = error_info["line"] - 1
-
-    if is_syntax_error:
-        uncommented_code = remove_comments_and_docstrings(error_info["code"])
-        # TODO: remove this?
-        # remove newline char
-        uncommented_code = uncommented_code[: len(uncommented_code) - 1]
-        offending_line = uncommented_code.splitlines()[-error_line]
-    else:
-        offending_line = code_lines[error_line]
-
-    return offending_line
 
 
 def broken_get_sym_table(error_info):
