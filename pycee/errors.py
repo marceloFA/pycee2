@@ -326,13 +326,3 @@ def remove_outter_quotes(string: str) -> str:
     input: ('foo',) 'bar'"
     """
     return string.strip('"').strip("'")
-
-
-def remove_text_between_tags(text: str, tag_name: str) -> str:
-    """This will remove all text between the given tag
-    Example:
-    input: "foo <code>a=2;<code> bar"
-    output: "foo  bar"
-    """
-    tag_regex = rf"<{tag_name}>(.+?)<{tag_name}>"
-    return re.sub(tag_regex, EMPTY_STRING, text)
