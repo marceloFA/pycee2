@@ -127,14 +127,3 @@ def cached_answer_content(*args, **kwargs):
 def cached_ask_stackoverflow(*args, **kwargs):
     """ ask_stackoverflow decorated with a cache """
     return ask_stackoverflow(*args, **kwargs)
-
-
-def get_summary(sentences):
-    """Convert sentences to single string -> not good for code."""
-
-    parser = PlaintextParser.from_string(sentences, Tokenizer("english"))
-    length = 4  # halve length and round up
-    # summarise text
-    summariser = LuhnSummarizer()
-
-    return summariser(parser.document, length)
