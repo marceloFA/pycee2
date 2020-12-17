@@ -20,48 +20,6 @@ def trim_and_split_code(code: str, error_line: str) -> List[str]:
 
     return trimmed_code
 
-
-def broken_get_sym_table(error_info):
-    """This is currently broken!"""
-
-    error_line = error_info["line"] - 1  # make this 0 indexed
-    is_syntax_error = error_info["type"] == "SyntaxError"
-    n_lines_to_remove = 1 if is_syntax_error else 2
-
-    code_lines = trim_and_split_code(error_info["code"], error_line)
-    clean_code = remove_comments_and_docstrings(error_info["code"])
-    clean_code_lines = clean_code.split("\n")
-
-    # adjust so we dont have to remove negtive inexistent lines
-    if error_line - n_lines_to_remove <= 0:
-        n_lines_to_remove = -(error_line - n_lines_to_remove) / error_line
-
-    if is_syntax_error:
-        n_lines_to_skip = get_syntax_error_skipable_lines(error_info["traceback"])
-        n_lines_to_remove = n_lines_to_skip
-    else:
-        pass
-
-    clean_code_lines = clean_code_lines[:-n_lines_to_remove]
-
-    # get whitespace at start of line
-    final = len(code_lines) - 1
-    indent = code_lines[final][: -len(code_lines[final].lstrip())]
-
-    if not clean_code_lines:
-        return None
-
-    if code_lines[final][len(code_lines[final]) - 1] == ":":
-        if not indent:
-            indent = "  "
-        else:
-            indent = indent + indent
-
-    final_code = clean_code + "\n" + indent + "import sys" + "\n" + indent + "sys.exit()" + "\n"
-    sym_table = symtable(final_code, "userCode", "exec")
-    return sym_table
-
-
 def get_syntax_error_skipable_lines(traceback):
     """SyntaxError has as aditional line to exactly where the error is.
     And this makes the traceback different from other errors.
