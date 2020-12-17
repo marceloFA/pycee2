@@ -1,15 +1,16 @@
 """Some data to be kept apart from application logic."""
 import argparse
-from os import path, remove
-import glob
-from sys import modules, argv
 from collections import namedtuple
+import glob
+import os
+import pathlib
+import sys
 
 from consolemd import Renderer
 from filecache import filecache
 
 
-def parse_args(args=argv[1:]):
+def parse_args(args=sys.argv[1:]):
     """A simple argparser to be used when pycee is executed as a script."""
 
     parser = argparse.ArgumentParser("pycee2", description="Pycee is a tool to provide user friendly error messages.")
@@ -80,20 +81,20 @@ def parse_args(args=argv[1:]):
 
 
 def remove_cache():
-    """Util to remove the cache files """
+    """Util to remove the cache files, which can be located at two different places
+    depending if pycee is running as a installed pacakge or as a cloned repository"""
 
-    # the location of file depend on whether using it as pip installed package or not
-    files = glob.glob("*.cache*") + glob.glob("pycee/*.cache*")
-
-    for file in files:
-        try:
-            remove(file)
-            print(f"Removed {file}")
-        except OSError as e:
-            print("Error: %s : %s" % (file, e.strerror))
-
-    print("Cache removed!\nPlease run pycee again without --remove-cache argument to get your answers")
-    exit()
+    installed_module_path = pathlib.Path(__file__).parent.absolute()
+    package_cache = glob.glob(os.path.join(installed_module_path, "*.cache*"))
+    local_cache = glob.glob("pycee/*.cache*")
+    files = package_cache + local_cache
+    print("Cache removed!\nPlease run pycee again without -rm or --remove-cache argument to get your answers")
+    # excecvp replace the curent process
+    # This is currently necessary because filecache package
+    # wouldn't let me delete all cache files on the main process
+    # -f so not found files won't polute the terminal
+    os.execvp("rm", ["rm", "-f"] + files)
+    # after execv vp finishes executing rm it exites
 
 
 def print_answers(so_answers, pycee_hint, pydoc_answer, args):
@@ -131,7 +132,7 @@ ANSWER_URL = BASE_URL + "/answers/<id>?site=stackoverflow&filter=withbody"
 QUESTION_ANSWERS_URL = BASE_URL + "/questions/<id>/answers?site=stackoverflow&filter=withbody"
 
 # A list of all standard exeptions
-BUILTINS = dir(modules["builtins"])
+BUILTINS = dir(sys.modules["builtins"])
 
 # namedtuples to represent simple objects
 Question = namedtuple("Question", ["id", "has_accepted"])
