@@ -317,12 +317,3 @@ def remove_quoted_words(error_message: str):
     output: "NameError: name is not defined"
     """
     return re.sub(r"'.*?'\s", EMPTY_STRING, error_message)
-
-
-def remove_outter_quotes(string: str) -> str:
-    """This will remove both single and double quote chars
-    from a string at the beggining and the end.
-    Example:
-    input: ('foo',) 'bar'"
-    """
-    return string.strip('"').strip("'")
