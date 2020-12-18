@@ -247,25 +247,6 @@ def handle_type_error(error_message):
     return url_for_error(error_message)
 
 
-def check_tokens_for_query(tokens: List) -> str:
-    """Check SyntaxError tokens to determine an apropriate query."""
-
-    query = ""
-
-    if "for" in tokens:
-        query = "for loop"
-    elif "while" in tokens:
-        query = "while loop"
-    elif "if" in tokens or "else" in tokens:
-        query = "if else syntax"
-    elif "def" in tokens:
-        query = "function definition"
-    else:
-        query = "SyntaxError: invalid syntax"
-
-    return query
-
-
 # Helper methods below
 
 
@@ -317,22 +298,3 @@ def remove_quoted_words(error_message: str):
     output: "NameError: name is not defined"
     """
     return re.sub(r"'.*?'\s", EMPTY_STRING, error_message)
-
-
-def remove_outter_quotes(string: str) -> str:
-    """This will remove both single and double quote chars
-    from a string at the beggining and the end.
-    Example:
-    input: ('foo',) 'bar'"
-    """
-    return string.strip('"').strip("'")
-
-
-def remove_text_between_tags(text: str, tag_name: str) -> str:
-    """This will remove all text between the given tag
-    Example:
-    input: "foo <code>a=2;<code> bar"
-    output: "foo  bar"
-    """
-    tag_regex = rf"<{tag_name}>(.+?)<{tag_name}>"
-    return re.sub(tag_regex, EMPTY_STRING, text)
