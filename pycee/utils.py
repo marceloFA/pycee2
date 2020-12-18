@@ -26,7 +26,7 @@ def parse_args(args=sys.argv[1:]):
         choices=range(1, 6),
         default=3,
         dest="n_questions",
-        help="The number of questions to retrieve from Stackoverflow",
+        help="Number of questions to retrieve from Stackoverflow",
     )
     parser.add_argument(
         "-a",
@@ -35,7 +35,15 @@ def parse_args(args=sys.argv[1:]):
         choices=range(1, 5),
         default=3,
         dest="n_answers",
-        help="The number of answers to display",
+        help="Number of answers to display",
+    )
+    parser.add_argument(
+        "-g",
+        "--from-google-search",
+        dest="google_search_only",
+        action="store_true",
+        default=False,
+        help="Retrieve questions only from Google search engine",
     )
     parser.add_argument(
         "-s",
@@ -43,7 +51,7 @@ def parse_args(args=sys.argv[1:]):
         dest="show_pycee_hint",
         action="store_false",
         default=True,
-        help="Get answers only from Stackoverflow",
+        help="Output only StackOverflow answers for the error",
     )
     parser.add_argument(
         "-p",
@@ -51,7 +59,7 @@ def parse_args(args=sys.argv[1:]):
         dest="show_so_answer",
         action="store_false",
         default=True,
-        help="Get answers only from from pycee",
+        help="Output only pycee hint for the error",
     )
     parser.add_argument(
         "-d",
@@ -127,9 +135,8 @@ EMPTY_STRING = ""
 COMMA_CHAR = ","
 
 BASE_URL = "https://api.stackexchange.com/2.2"
-API_SEARCH_URL = BASE_URL + "/search?site=stackoverflow"
-ANSWER_URL = BASE_URL + "/answers/<id>?site=stackoverflow&filter=withbody"
-QUESTION_ANSWERS_URL = BASE_URL + "/questions/<id>/answers?site=stackoverflow&filter=withbody"
+SEARCH_URL = BASE_URL + "/search?site=stackoverflow"
+ANSWERS_URL = BASE_URL + "/questions/<id>/answers?site=stackoverflow&filter=withbody"
 
 # A list of all standard exeptions
 BUILTINS = dir(sys.modules["builtins"])
