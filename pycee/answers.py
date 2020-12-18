@@ -90,7 +90,7 @@ def get_answer_content(questions: Tuple[Question]) -> Tuple[Answer, None]:
                 score=items[0]["score"],
                 body=items[0]["body"],
                 author=items[0]["owner"]["display_name"],
-                profile_image=items[0]["owner"]["profile_image"],
+                profile_image=items[0]["owner"].get("profile_image", None),
             )
         )
 
@@ -110,7 +110,7 @@ def get_answer_content(questions: Tuple[Question]) -> Tuple[Answer, None]:
                     score=accepted["score"],
                     body=accepted["body"],
                     author=accepted["owner"]["display_name"],
-                    profile_image=accepted["owner"]["profile_image"],
+                    profile_image=accepted["owner"].get("profile_image", None),
                 )
             )
 

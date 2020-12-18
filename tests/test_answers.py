@@ -45,7 +45,6 @@ answers_data = {
             "body": "Body 3",
             "owner": {
                 "display_name": "author 3",
-                "profile_image": "foo 3",
             },
         },
         {
@@ -111,7 +110,7 @@ def test_get_answer_content_from_one_question():
 
     expected_answers = [
         Answer(id="4", accepted=False, score=20, body="Body 4", author="author 4", profile_image="foo 4"),
-        Answer(id="3", accepted=True, score=10, body="Body 3", author="author 3", profile_image="foo 3"),
+        Answer(id="3", accepted=True, score=10, body="Body 3", author="author 3", profile_image=None),
     ]
     assert answers == tuple(expected_answers)
 
