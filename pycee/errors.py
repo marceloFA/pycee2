@@ -8,10 +8,11 @@ from typing import List, Union
 from collections import defaultdict
 from importlib import import_module
 from difflib import get_close_matches
+from argparse import Namespace
 
 from slugify import slugify
 
-from .utils import DATA_TYPES, BUILTINS, HINT_MESSAGES, API_SEARCH_URL
+from .utils import DATA_TYPES, BUILTINS, HINT_MESSAGES, SEARCH_URL
 from .utils import (
     SINGLE_QUOTE_CHAR,
     DOUBLE_QUOTE_CHAR,
@@ -20,7 +21,7 @@ from .utils import (
 )
 
 
-def handle_error(error_info: dict, n_questions: int, dry_run: bool = False) -> str:
+def handle_error(error_info: dict, cmd_args: Namespace) -> str:
     """Process the incoming error as needed and outputs three possible answer.
     output:
     query: an URL containing an stackoverflow query about the error.
@@ -66,9 +67,9 @@ def handle_error(error_info: dict, n_questions: int, dry_run: bool = False) -> s
     else:
         query = url_for_error(error_message)  # default query
 
-    query = set_pagesize(query, n_questions) if query else None
+    query = set_pagesize(query, cmd_args.n_questions) if query else None
 
-    if dry_run:
+    if cmd_args.dry_run:
         print(query)
         exit()
 
@@ -270,7 +271,7 @@ def get_query_params(error_message: str):
 def url_for_error(error_message: str) -> str:
     """Build a valid search url."""
 
-    return API_SEARCH_URL + get_query_params(error_message)
+    return SEARCH_URL + get_query_params(error_message)
 
 
 def get_quoted_words(error_message: str) -> List[str]:
