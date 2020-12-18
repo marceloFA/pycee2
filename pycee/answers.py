@@ -8,38 +8,35 @@ from typing import List, Tuple
 from operator import attrgetter
 from difflib import get_close_matches
 
-import requests
+from argparse import Namespace
+from filecache import filecache, MONTH
+import googlesearch
 from html2text import html2text
-from filecache import filecache, WEEK
-from sumy.nlp.tokenizers import Tokenizer
-from sumy.summarizers.luhn import LuhnSummarizer
-from sumy.parsers.plaintext import PlaintextParser
+import requests
 
 from .utils import SINGLE_SPACE_CHAR, COMMA_CHAR, EMPTY_STRING
-from .utils import BUILTINS, ANSWER_URL, QUESTION_ANSWERS_URL
+from .utils import BUILTINS, ANSWERS_URL
 from .utils import Question, Answer
 
 
-def get_so_answers(query, error_info, cache=True, n_answers=3):
+def get_answers(query, error_info: dict, cmd_args: Namespace):
     """This coordinate the answer aquisition process. It goes like this:
     1- Use the query to check stackexchange API for related questions
-    2- TODO: If stackoverflow API search engine couldn't find questions, ask Google instead
+    2- If stackoverflow API search engine couldn't find questions, ask Google instead
     3- For each question, get the most voted and accepted answers
     4- Sort answers by vote count and limit them
     3- TODO: Summarize long answers and make it ready to output to the user;
     """
 
-    questions = None
-    answers = None
+    questions = answers = None
 
-    if cache:
-        questions = cached_ask_stackoverflow(query)
-        answers = cached_answer_content(questions)
+    # TODO: @marcelofa, implement a decent optional cache feature
+    if cmd_args.cache:
+        questions, answers = ask_cache(query, error_info, cmd_args)
     else:
-        questions = ask_stackoverflow(query)
-        answers = get_answer_content(questions)
+        questions, answers = ask_live(query, error_info, cmd_args)
 
-    sorted_answers = sorted(answers, key=attrgetter("score"), reverse=True)[:n_answers]
+    sorted_answers = sorted(answers, key=attrgetter("score"), reverse=True)[: cmd_args.n_answers]
     summarized_answers = []
 
     for ans in sorted_answers:
@@ -50,8 +47,8 @@ def get_so_answers(query, error_info, cache=True, n_answers=3):
     return summarized_answers, sorted_answers
 
 
-def ask_stackoverflow(query: str) -> Tuple[Question, None]:
-    """This method ask StackOverflow (so) API for questions."""
+def _ask_stackoverflow(query: str) -> Tuple[Question, None]:
+    """Ask StackOverflow (so) API for questions."""
 
     if query is None:
         return tuple()
@@ -67,15 +64,33 @@ def ask_stackoverflow(query: str) -> Tuple[Question, None]:
     return tuple(questions)
 
 
-def get_answer_content(questions: Tuple[Question]) -> Tuple[Answer, None]:
+def _ask_google(error_message: str, n_questions: int) -> Tuple[Question, None]:
+    """Google errors that could not be found
+    using StackOverflow API"""
+
+    # restrict to get only results form StackOverflow
+    query = error_message + " site:stackoverflow.com"
+    questions_url = googlesearch.search(
+        query,
+    )[:n_questions]
+
+    # parse questions id from each url path
+    # re.findall will return something like '/666/' so the
+    # [1:-1] slicing can remove these slashes
+    questions_id = [re.findall(r"/\d+/", q)[0][1:-1] for q in questions_url]
+
+    return tuple(Question(id=qid, has_accepted=None) for qid in questions_id)
+
+
+def _get_answer_content(questions: Tuple[Question]) -> Tuple[Answer, None]:
     """Retrieve the most voted and the accepted answers for each question"""
 
-    url = QUESTION_ANSWERS_URL + "&order=desc" + "&sort=votes"
+    url = ANSWERS_URL + "&order=desc" + "&sort=votes"
     answers = []
 
     for question in questions:
 
-        response = requests.get(url.replace("<id>", str(question.id)))
+        response = requests.get(url.replace("<id>", question.id))
         items = response.json()["items"]
 
         if not items:
@@ -99,31 +114,72 @@ def get_answer_content(questions: Tuple[Question]) -> Tuple[Answer, None]:
         if items[0]["is_accepted"]:
             continue
 
-        # get accepted answer
-        if question.has_accepted:
-            # accepted is a filtered list of which the only and first elment is the accepted answer
-            accepted = list(filter(lambda a: a["is_accepted"], items))[0]
-            answers.append(
-                Answer(
-                    id=str(accepted["answer_id"]),
-                    accepted=True,
-                    score=accepted["score"],
-                    body=accepted["body"],
-                    author=accepted["owner"]["display_name"],
-                    profile_image=accepted["owner"].get("profile_image", None),
-                )
+        # get accepted answer, if any
+
+        # a filtered list which the first and only element is the accepted answer
+        filtered = list(filter(lambda a: a["is_accepted"], items))
+        if filtered == []:
+            continue
+
+        accepted = filtered[0]
+        answers.append(
+            Answer(
+                id=str(accepted["answer_id"]),
+                accepted=True,
+                score=accepted["score"],
+                body=accepted["body"],
+                author=accepted["owner"]["display_name"],
+                profile_image=accepted["owner"].get("profile_image", None),
             )
+        )
 
     return tuple(answers)
 
 
-@filecache(WEEK)
-def cached_answer_content(*args, **kwargs):
+# Cache related code below
+
+
+def ask_cache(query, error_info, cmd_args):
+    """ Retrieve questions and answers from cached local files """
+
+    questions = None
+    if cmd_args.google_search_only:
+        questions = _cached_ask_google(error_info["message"], cmd_args.n_questions)
+    else:
+        # force a google search if stackoverflow didn't provide any answer
+        questions = _cached_ask_stackoverflow(query) or _cached_ask_google(error_info["message"], cmd_args.n_questions)
+
+    answers = _cached_answer_content(questions)
+    return questions, answers
+
+
+def ask_live(query, error_info, cmd_args):
+    """ Retrieve questions and answers by doing actual http requests """
+
+    questions = None
+    if cmd_args.google_search_only:
+        questions = _ask_google(error_info["message"], cmd_args.n_questions)
+    else:
+        # force a google search if stackoverflow didn't provide any answer
+        questions = _ask_stackoverflow(query) or _ask_google(error_info["message"], cmd_args.n_questions)
+
+    answers = _get_answer_content(questions)
+    return questions, answers
+
+
+@filecache(MONTH)
+def _cached_answer_content(*args, **kwargs):
     """ get_answer_content decorated with a cache """
-    return get_answer_content(*args, **kwargs)
+    return _get_answer_content(*args, **kwargs)
 
 
-@filecache(WEEK)
-def cached_ask_stackoverflow(*args, **kwargs):
+@filecache(MONTH)
+def _cached_ask_stackoverflow(*args, **kwargs):
     """ ask_stackoverflow decorated with a cache """
-    return ask_stackoverflow(*args, **kwargs)
+    return _ask_stackoverflow(*args, **kwargs)
+
+
+@filecache(MONTH)
+def _cached_ask_google(*args, **kwargs):
+    """ ask_google decorated with a cache """
+    return _ask_google(*args, **kwargs)
