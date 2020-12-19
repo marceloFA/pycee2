@@ -127,7 +127,6 @@ def print_answers(so_answers, pycee_hint, pydoc_answer, args):
 
 
 # These are some constants we use throughout the codebase
-DEFAULT_HTML_PARSER = "html5lib"
 SINGLE_QUOTE_CHAR = "'"
 DOUBLE_QUOTE_CHAR = '"'
 SINGLE_SPACE_CHAR = " "
