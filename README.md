@@ -1,6 +1,7 @@
 <h1 align="center">Pycee2</h1>
 
-</p>
+[![codecov](https://codecov.io/gh/LeonardoFurtado/pycee2/branch/master/graph/badge.svg?token=MQI078A12M)](https://codecov.io/gh/LeonardoFurtado/pycee2)
+
 
 This is a refactored version of [pycee](https://github.com/EmillieT/Pycee).
 Pycee 2 is a tool that provides enhanced error messages for Python code.
