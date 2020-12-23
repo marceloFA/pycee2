@@ -247,7 +247,9 @@ def handle_type_error(error_message):
     elif hint2 in error_message:
         message = remove_exception_from_error_message(error_message)
 
-    return url_for_error(error_message)
+    message = slugify(message, separator="+")
+
+    return url_for_error(message)
 
 
 def check_tokens_for_query(tokens: List) -> str:
