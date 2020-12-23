@@ -1,7 +1,6 @@
 requests
-sumy
-html5lib
 python-slugify
 filecache
+googlesearch-python
 html2text
 consolemd

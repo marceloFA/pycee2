@@ -30,14 +30,16 @@ def test_store_boolean_args():
         cache=False,  # default is True
         dry_run=True,  # default is False
         rm_cache=True,  # default is False
+        google_search_only=True,  # default is False
         show_pycee_hint=False,  # default is True
         show_so_answer=False,  # default is True
     )
-    parsed_args = parse_args(["foo.py", "-f", "--dry-run", "-rm", "-s", "-p"])
+    parsed_args = parse_args(["foo.py", "-f", "--dry-run", "-rm", "-g", "-s", "-p"])
 
     assert parsed_args.cache == expected_args.cache
     assert parsed_args.dry_run == expected_args.dry_run
     assert parsed_args.rm_cache == expected_args.rm_cache
+    assert parsed_args.google_search_only == expected_args.google_search_only
     assert parsed_args.show_pycee_hint == expected_args.show_pycee_hint
     assert parsed_args.show_so_answer == expected_args.show_so_answer
 
@@ -50,6 +52,7 @@ def test_default_args():
         cache=True,
         dry_run=False,
         rm_cache=False,
+        google_search_only=False,
         show_pycee_hint=True,
         show_so_answer=True,
     )
@@ -61,5 +64,6 @@ def test_default_args():
     assert parsed_args.cache == expected_args.cache
     assert parsed_args.dry_run == expected_args.dry_run
     assert parsed_args.rm_cache == expected_args.rm_cache
+    assert parsed_args.google_search_only == expected_args.google_search_only
     assert parsed_args.show_pycee_hint == expected_args.show_pycee_hint
     assert parsed_args.show_so_answer == expected_args.show_so_answer
