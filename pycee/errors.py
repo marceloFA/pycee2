@@ -246,6 +246,8 @@ def handle_type_error(error_message):
         message = "must have first callable argument"
     elif hint2 in error_message:
         message = remove_exception_from_error_message(error_message)
+    else:
+        return url_for_error(error_message)
 
     message = slugify(message, separator="+")
 
