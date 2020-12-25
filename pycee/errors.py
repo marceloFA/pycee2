@@ -53,6 +53,9 @@ def handle_error(error_info: dict, cmd_args: Namespace) -> str:
         pycee_hint = handle_module_error_locally(error_message)
         query = handle_module_not_found_error(error_message)
 
+    elif error_type == "TypeError":
+        query = handle_type_error(error_message)
+
     elif error_type == "KeyError":
         pycee_hint = handle_key_error_locally(error_message, error_info["offending_line"])
         query = handle_key_error(error_message)
@@ -242,10 +245,14 @@ def handle_type_error(error_message):
     message = ""
     if hint1 in error_message:
         message = "must have first callable argument"
-    elif hint2 in message:
+    elif hint2 in error_message:
         message = remove_exception_from_error_message(error_message)
+    else:
+        return url_for_error(error_message)
 
-    return url_for_error(error_message)
+    message = slugify(message, separator="+")
+
+    return url_for_error(message)
 
 
 # Helper methods below
