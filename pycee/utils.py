@@ -123,7 +123,7 @@ def print_answers(so_answers, pycee_hint, pydoc_answer, args):
         print(f"Pycee hint:\n")
         if not pycee_hint:
             print("Pycee does not have an hint for fixing this error on its manuals.")
-        else:
+        else:            
             print(pycee_hint)
 
 
