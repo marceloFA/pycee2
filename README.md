@@ -1,6 +1,6 @@
 # Pycee
 
-Pycee is a tool to provide possible solutions for errors in python code.
+Pycee is a tool to provide possible solutions for errors in python code. 
 Solutions are from Stackoverflow questions that may be related to the code error.
 This is a reimplementation of [Emillie Thiselton's Pycee](https://github.com/EmillieT/Pycee).  
 
@@ -15,10 +15,10 @@ pip3 install pycee2
 After installed, all you have to do is to call ``pycee`` passing the name of the file that contains the error.
 
 ```console
- pycee file_with_error.py
+ pycee file_with_error.py 
  ```
 
-Here's an example:
+Here's an example: 
 Suppose ``script.py`` contains the following code:
 ```python
 # Brazil world cup titles by year
@@ -47,7 +47,7 @@ E.g, if your list was [1, 3, 5, 7], and you asked for the element at index
 10, you would be well out of bounds and receive an error, as only elements 0
 through 3 exist.
 
-...
+... 
 (rest of the output with two more answers omitted from this example)
 ```
 
@@ -72,7 +72,7 @@ source venv/bin/activate
 pip3 install -r requirements.txt requirements-dev.txt
 
 #  using pycee in development mode, from the project root
-python3 usage.py example_code.py
+python3 usage.py example_code.py 
 
 # running tests, from the project root
 pytest
