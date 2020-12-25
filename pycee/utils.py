@@ -111,18 +111,19 @@ def print_answers(so_answers, pycee_hint, pydoc_answer, args):
     if args.show_so_answer:
 
         if not so_answers:
-            print("\nPycee couldn't find answers for the error on Stackoverflow.")
+            print("Pycee couldn't find answers for the error on Stackoverflow.\n")
         else:
             renderer = Renderer()
             for i, answer in enumerate(so_answers):
-                print(f"\nSolution {i}:")
+                print(f"Solution {i+1}:\n")
                 renderer.render(answer)
+                print('\n')
 
     if args.show_pycee_hint:
+        print(f"Pycee hint:\n")
         if not pycee_hint:
-            print("\nPycee does not have an hint for fixing this error on its manuals.")
-        else:
-            print("\nPycee Answer:")
+            print("Pycee does not have an hint for fixing this error on its manuals.")
+        else:            
             print(pycee_hint)
 
 
