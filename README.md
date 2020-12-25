@@ -7,7 +7,7 @@ This is a reimplementation of [Emillie Thiselton's Pycee](https://github.com/Emi
 ### :gear: Installation
 
 ```console
-pip3 install pycee
+pip3 install pycee2
 ```
 
 ### :computer: Using Pycee2
