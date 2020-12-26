@@ -2,7 +2,11 @@
 
 Pycee is a tool to provide possible solutions for errors in python code. 
 Solutions are from Stackoverflow questions that may be related to the code error.
-This is a reimplementation of [Emillie Thiselton's Pycee](https://github.com/EmillieT/Pycee).  
+This is a reimplementation of [Emillie Thiselton's Pycee](https://github.com/EmillieT/Pycee).
+
+### Live demo
+Trying out pycee2 without installing is possible through the [web application](https://pycee.herokuapp.com).
+It uses [PythonBuddy](https://github.com/marceloFA/PythonBuddy) as a python editor for the web with linting included.
 
 ### :gear: Installation
 
@@ -12,7 +16,7 @@ pip3 install pycee2
 
 ### :computer: Using Pycee2
 
-After installed, all you have to do is to call ``pycee`` passing the name of the file that contains the error.
+After installation, all you have to do is to call ``pycee`` passing the name of the file that contains the error.
 
 ```console
  pycee file_with_error.py 
@@ -33,14 +37,14 @@ Traceback (most recent call last):
     print(world_cup_titles[5])
 IndexError: list index out of range
 ```
-Then you can use pycee to provide an possible answer for the error, linke so:
+Then you can use pycee to provide a possible answer for the error, like so:
 ```console
 pycee script.py
 ```
-Which, finally, will output some answers form stackoverflow that are possibily related to your error:
+Which, finally, will output some answers from StackOverflow that are possibly related to your error:
 ```console
 Solution 1:
-Generally it means that you are providing an index for which a list element
+Generally, it means that you are providing an index for which a list element
 does not exist.
 
 E.g, if your list was [1, 3, 5, 7], and you asked for the element at index
@@ -51,7 +55,7 @@ through 3 exist.
 (rest of the output with two more answers omitted from this example)
 ```
 
-### :gear: Installation (for contributors)
+### :construction_worker: Setup script for contributors
 
 ```console
 
