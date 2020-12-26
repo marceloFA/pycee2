@@ -117,13 +117,13 @@ def print_answers(so_answers, pycee_hint, pydoc_answer, args):
             for i, answer in enumerate(so_answers):
                 print(f"Solution {i+1}:\n")
                 renderer.render(answer)
-                print('\n')
+                print("\n")
 
     if args.show_pycee_hint:
-        print(f"Pycee hint:\n")
+        print("Pycee hint:\n")
         if not pycee_hint:
             print("Pycee does not have an hint for fixing this error on its manuals.")
-        else:            
+        else:
             print(pycee_hint)
 
 
