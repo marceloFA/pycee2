@@ -1,6 +1,11 @@
-# Pycee
+<h1 align="center">Pycee</h1>
 
-[![codecov](https://codecov.io/gh/marceloFA/pycee2/branch/master/graph/badge.svg?token=MQI078A12M)](https://codecov.io/gh/marceloFA/pycee2)
+<p align="center">
+  <a href="https://github.com/marceloFA/pycee2/actions"><img alt="pycee2 status" src="https://github.com/marceloFA/pycee2/workflows/Test%20pycee2/badge.svg?branch=master"></a>
+  <a href="https://codecov.io/gh/marceloFA/pycee2"><img alt="pycee2 coverage" src="https://codecov.io/gh/marceloFA/pycee2/branch/master/graph/badge.svg?token=MQI078A12M"></a>
+  <a href="https://opensource.org/licenses/MIT"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
+  <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
+</p>
 
 Pycee is a tool to provide possible solutions for errors in python code.
 Solutions are from Stackoverflow questions that may be related to the code error.
