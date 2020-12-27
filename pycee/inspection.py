@@ -4,7 +4,7 @@ import sys
 from pprint import pprint
 from dis import get_instructions
 from collections import defaultdict
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import Popen, PIPE
 from typing import Union
 
 from .utils import BUILTINS

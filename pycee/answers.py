@@ -3,10 +3,8 @@
  and then choosing the best answer for the error"""
 
 import re
-from keyword import kwlist
-from typing import List, Tuple
+from typing import Tuple
 from operator import attrgetter
-from difflib import get_close_matches
 
 from argparse import Namespace
 from filecache import filecache, MONTH
@@ -14,8 +12,7 @@ import googlesearch
 from html2text import html2text
 import requests
 
-from .utils import SINGLE_SPACE_CHAR, COMMA_CHAR, EMPTY_STRING
-from .utils import BUILTINS, ANSWERS_URL
+from .utils import ANSWERS_URL
 from .utils import Question, Answer
 
 

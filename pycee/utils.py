@@ -7,7 +7,6 @@ import pathlib
 import sys
 
 from consolemd import Renderer
-from filecache import filecache
 
 
 def parse_args(args=sys.argv[1:]):

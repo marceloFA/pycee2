@@ -1,21 +1,13 @@
 """Contains all the logic that handles code errors."""
 import re
-import sys
-from json import load
-from os.path import join
-from keyword import kwlist
 from typing import List, Union
-from collections import defaultdict
-from importlib import import_module
-from difflib import get_close_matches
 from argparse import Namespace
 
 from slugify import slugify
 
-from .utils import DATA_TYPES, BUILTINS, HINT_MESSAGES, SEARCH_URL
+from .utils import HINT_MESSAGES, SEARCH_URL
 from .utils import (
     SINGLE_QUOTE_CHAR,
-    DOUBLE_QUOTE_CHAR,
     SINGLE_SPACE_CHAR,
     EMPTY_STRING,
 )
