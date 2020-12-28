@@ -9,7 +9,6 @@ from pycee.inspection import (
     get_error_line,
     get_file_name,
     get_code,
-    get_packages,
     get_offending_line,
 )
 
@@ -126,17 +125,3 @@ def test_get_offending_line_syntax_error_generic():
     code = "import os\nimport math\n\n\nprint(os.getcwd())\nprint(math.pi)\n\ndef foo(bar)\n    pass\n\n# just for testing purposes\n\n\n"
     offending_line = get_offending_line(error_line, code)
     assert offending_line == "def foo(bar)"
-
-
-def test_get_packages():
-
-    error_message = "from collections import Counter\nimport not_a_module\nfrom stats import median as stats_median\n"
-    packages = defaultdict(
-        list,
-        {
-            "import_name": ["collections", "not_a_module", "stats"],
-            "import_from": ["Counter", "median"],
-        },
-    )
-
-    assert get_packages(error_message) == packages
