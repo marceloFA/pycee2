@@ -59,6 +59,10 @@ def handle_error(error_info: dict, cmd_args: Namespace) -> str:
         pycee_hint = handle_name_error_locally(error_message)
         query = handle_name_error(error_message)
 
+    elif error_type == "ZeroDivisionError":
+        pycee_hint = handle_zero_division_error_locally(error_message)
+        query = handle_zero_division_error(error_message)
+
     else:
         query = url_for_error(error_message)  # default query
 
@@ -245,6 +249,19 @@ def handle_type_error(error_message):
     message = slugify(message, separator="+")
 
     return url_for_error(message)
+
+
+def handle_zero_division_error(error_message):
+    """Process an ZeroDivisionError"""
+
+    message = remove_exception_from_error_message(error_message)
+    return url_for_error(message)
+
+
+def handle_zero_division_error_locally(error_message, error_line):
+    """Process an ZeroDivisionError"""
+    hint = HINT_MESSAGES["ZeroDivisionError"]
+    return hint
 
 
 # Helper methods below

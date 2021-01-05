@@ -181,6 +181,11 @@ HINT_MESSAGES = {
         "\n5- Check for the classic '=' instead of '==' in a conditional statement."
         "\nSource: https://www.openbookproject.net/thinkcs/python/english2e/app_a.html"
     ),
+    "ZeroDivisionError": (
+        "You have tried to divide a number by zero"
+        "\nCheck the division operations to find the error."
+        "\nDivision operations where the divisor is generate by a range() can throw this error if the range() starts at 0"
+    ),
 }
 
 # standard python3 datatypes
