@@ -10,7 +10,7 @@ from consolemd import Renderer
 
 
 def parse_args(args=sys.argv[1:]):
-    """A simple argparser to be used when pycee is executed as a script."""
+    """A simple argparse to be used when pycee is executed as a script."""
 
     parser = argparse.ArgumentParser("pycee2", description="Pycee is a tool to provide user friendly error messages.")
     parser.add_argument(
@@ -96,12 +96,12 @@ def remove_cache():
     local_cache = glob.glob("pycee/*.cache*")
     files = package_cache + local_cache
     print("Cache removed!\nPlease run pycee again without -rm or --remove-cache argument to get your answers")
-    # excecvp replace the curent process
+    # excecvp replace the current process
     # This is currently necessary because filecache package
     # wouldn't let me delete all cache files on the main process
     # -f so not found files won't polute the terminal
     os.execvp("rm", ["rm", "-f"] + files)
-    # after execv vp finishes executing rm it exites
+    # after execv vp finishes executing rm it exits
 
 
 def print_answers(so_answers, pycee_hint, pydoc_answer, args):
@@ -161,13 +161,13 @@ HINT_MESSAGES = {
         "\nif this module can be installed using pip like: 'pip install <missing_module>'"
     ),
     "IndexError": (
-        "You tried to acess an index that does not exist in a <sequence> at line <line>."
+        "You tried to access an index that does not exist in a <sequence> at line <line>."
         "\nAn IndexError happens when asking for non existing indexes values of sequences."
         "\nSequences can be lists, tuples and range objects."
         "\nTo fix this make sure that the index value is valid."
     ),
     "SyntaxError": (
-        "You have a syntax error somewehre arround line <line>"
+        "You have a syntax error somewhere around line <line>"
         "\nGenerally, syntax errors occurs when multiple code statements are interpreted as if they were one."
         "\nThis may be caused by several simple issues, below is a list of them."
         "\nYou should check if your code contains any of these issues."
@@ -182,9 +182,9 @@ HINT_MESSAGES = {
         "\nSource: https://www.openbookproject.net/thinkcs/python/english2e/app_a.html"
     ),
     "ZeroDivisionError": (
-        "You have tried to divide a number by zero"
-        "\nCheck the division operations to find the error."
-        "\nDivision operations where the divisor is generate by a range() can throw this error if the range() starts at 0"
+        "You have tried to divide a number by zero around line <line>"
+        "\nCheck the division operation to find the error."
+        "\nDivision operations where the divisor is generate by a range() can throw this error if the range() starts at 0."
     ),
 }
 

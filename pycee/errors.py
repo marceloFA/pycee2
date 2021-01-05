@@ -26,10 +26,11 @@ def handle_error(error_info: dict, cmd_args: Namespace) -> str:
     pycee_hint = None
     error_type = error_info["type"]
     error_message = error_info["message"]
+    error_line = error_info["line"]
 
     if error_type == "SyntaxError":
-        pycee_hint = handle_syntax_error_locally(error_info["message"], error_info["line"])
-        query = handle_syntax_error(error_info["message"])
+        pycee_hint = handle_syntax_error_locally(error_message, error_line)
+        query = handle_syntax_error(error_message)
 
     elif error_type == "TabError":
         query = handle_tab_error(error_message)
@@ -38,7 +39,7 @@ def handle_error(error_info: dict, cmd_args: Namespace) -> str:
         query = handle_indentation_error(error_message)
 
     elif error_type == "IndexError":
-        pycee_hint = handle_index_error_locally(error_message, error_info["line"])
+        pycee_hint = handle_index_error_locally(error_message, error_line)
         query = handle_index_error(error_message)
 
     elif error_type == "ModuleNotFoundError":
@@ -60,7 +61,7 @@ def handle_error(error_info: dict, cmd_args: Namespace) -> str:
         query = handle_name_error(error_message)
 
     elif error_type == "ZeroDivisionError":
-        pycee_hint = handle_zero_division_error_locally(error_message)
+        pycee_hint = handle_zero_division_error_locally(error_line)
         query = handle_zero_division_error(error_message)
 
     else:
@@ -258,9 +259,9 @@ def handle_zero_division_error(error_message):
     return url_for_error(message)
 
 
-def handle_zero_division_error_locally(error_message, error_line):
+def handle_zero_division_error_locally(error_line):
     """Process an ZeroDivisionError"""
-    hint = HINT_MESSAGES["ZeroDivisionError"]
+    hint = HINT_MESSAGES["ZeroDivisionError"].replace("<line>", str(error_line))
     return hint
 
 
