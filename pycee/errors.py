@@ -187,7 +187,7 @@ def handle_index_error(message):
 
 
 def handle_attr_error(error_message):
-    """Process an AttributeError by directly asking Stackovweflow
+    """Process an AttributeError by directly asking StackOverflow
     about the error message."""
 
     error = slugify(error_message, separator="+")
