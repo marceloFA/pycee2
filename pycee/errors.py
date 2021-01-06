@@ -181,11 +181,6 @@ def handle_index_error_locally(error_message: str, error_line: int) -> str:
 def handle_index_error(message):
     """Process an IndexError."""
 
-    to_remove = " cannot be "
-    if to_remove in message:
-        message = message.replace(to_remove, EMPTY_STRING)
-
-    message = message.replace("IndexError:", "index error")
     message = slugify(message, separator="+")
 
     return url_for_error(message)

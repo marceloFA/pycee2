@@ -89,7 +89,7 @@ def parse_args(args=sys.argv[1:]):
 
 def remove_cache():
     """Util to remove the cache files, which can be located at two different places
-    depending if pycee is running as a installed pacakge or as a cloned repository"""
+    depending if pycee is running as a installed package or as a cloned repository"""
 
     installed_module_path = pathlib.Path(__file__).parent.absolute()
     package_cache = glob.glob(os.path.join(installed_module_path, "*.cache*"))
@@ -184,7 +184,8 @@ HINT_MESSAGES = {
     "ZeroDivisionError": (
         "You have tried to divide a number by zero around line <line>"
         "\nCheck the division operation to find the error."
-        "\nDivision operations where the divisor is generate by a range() can throw this error if the range() starts at 0."
+        "\nDivision operations where the divisor is generate by a range() can throw this error if the range() starts "
+        "at 0. "
     ),
 }
 
