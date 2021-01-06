@@ -305,7 +305,7 @@ def remove_exception_from_error_message(error_message: str) -> str:
 
 
 def remove_quoted_words(error_message: str):
-    """Removes quoted words from an error messsage.
+    """Removes quoted words from an error message.
     Example:
     input: "NameError: name 'a' is not defined"
     output: "NameError: name is not defined"
