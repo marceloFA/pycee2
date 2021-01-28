@@ -1,4 +1,3 @@
-import pytest
 from pycee import errors
 from pycee.utils import HINT_MESSAGES
 
