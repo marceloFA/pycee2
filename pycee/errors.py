@@ -181,18 +181,13 @@ def handle_index_error_locally(error_message: str, error_line: int) -> str:
 def handle_index_error(message):
     """Process an IndexError."""
 
-    to_remove = " cannot be "
-    if to_remove in message:
-        message = message.replace(to_remove, EMPTY_STRING)
-
-    message = message.replace("IndexError:", "index error")
     message = slugify(message, separator="+")
 
     return url_for_error(message)
 
 
 def handle_attr_error(error_message):
-    """Process an AttributeError by directly asking Stackovweflow
+    """Process an AttributeError by directly asking StackOverflow
     about the error message."""
 
     error = slugify(error_message, separator="+")
@@ -310,7 +305,7 @@ def remove_exception_from_error_message(error_message: str) -> str:
 
 
 def remove_quoted_words(error_message: str):
-    """Removes quoted words from an error messsage.
+    """Removes quoted words from an error message.
     Example:
     input: "NameError: name 'a' is not defined"
     output: "NameError: name is not defined"
