@@ -13,7 +13,7 @@ from .utils import (
 )
 
 
-def handle_error(error_info: dict, cmd_args: Namespace) -> str:
+def handle_error(error_info: dict, cmd_args: Namespace) -> tuple:
     """Process the incoming error as needed and outputs three possible answer.
     output:
     query: an URL containing an stackoverflow query about the error.
@@ -21,7 +21,6 @@ def handle_error(error_info: dict, cmd_args: Namespace) -> str:
     TODO: pydoc_answer: A possible answer extracted from the builtin help.
     """
 
-    query = None
     pydoc_answer = None
     pycee_hint = None
     error_type = error_info["type"]
@@ -80,7 +79,6 @@ def handle_key_error_locally(error_message: str, offending_line: str) -> str:
     """When KeyError is handled locally we remind the user that the problematic
     dict should have a key with a certain value."""
 
-    hint = HINT_MESSAGES["KeyError"]
     missing_key = error_message.split(SINGLE_SPACE_CHAR, maxsplit=1)[-1]
 
     # this first regex will match part of the pattern of a dict acess: a_dict[some_value]
@@ -97,19 +95,7 @@ def handle_key_error_locally(error_message: str, offending_line: str) -> str:
     # we cannot determine which dict originated the error.
     target = indentifiers[0] if len(set(indentifiers)) == 1 else None
 
-    if target:
-        hint = hint.replace(
-            "<initial_error>",
-            f"Dictionary '{target}' does not have a key with value {missing_key}.",
-        )
-        hint = hint.replace("<key>", missing_key)
-    else:
-        formatted_identifiers = ", ".join(indentifiers)
-        hint = hint.replace(
-            "<initial_error>",
-            f"One of dictionaries {formatted_identifiers} does not have a key with value {missing_key}.",
-        )
-        hint = hint.replace("<key>", missing_key)
+    hint = define_hint_for_key_error_locally(target, missing_key, indentifiers)
 
     return hint
 
@@ -130,7 +116,7 @@ def handle_name_error_locally(error_message: str) -> str:
     return hint
 
 
-def handle_name_error(error_message: str):
+def handle_name_error(error_message: str) -> str:
     """Process an NameError by removing the variable name.
     By doing this the default error can be search without interference
     of the variable name, which does not add to the problem.
@@ -144,7 +130,7 @@ def handle_name_error(error_message: str):
     return url_for_error(remove_quoted_words(error_message))
 
 
-def handle_module_error_locally(error_message):
+def handle_module_error_locally(error_message: str) -> str:
     """Ask if the user has passed a valid module name or
     if it's installable though pip"""
 
@@ -153,7 +139,7 @@ def handle_module_error_locally(error_message):
     return hint
 
 
-def handle_module_not_found_error(error_message):
+def handle_module_not_found_error(error_message: str) -> str:
     """Handling ModuleNoutFoundError is quite simple as most of well known packages
     already have questions on ModuleNotFoundError solved at stackoverflow"""
 
@@ -178,7 +164,7 @@ def handle_index_error_locally(error_message: str, error_line: int) -> str:
     return hint
 
 
-def handle_index_error(message):
+def handle_index_error(message: str) -> str:
     """Process an IndexError."""
 
     message = slugify(message, separator="+")
@@ -186,7 +172,7 @@ def handle_index_error(message):
     return url_for_error(message)
 
 
-def handle_attr_error(error_message):
+def handle_attr_error(error_message: str) -> str:
     """Process an AttributeError by directly asking StackOverflow
     about the error message."""
 
@@ -194,7 +180,7 @@ def handle_attr_error(error_message):
     return url_for_error(error)
 
 
-def handle_indentation_error(error_message):
+def handle_indentation_error(error_message: str) -> str:
     """Process an IndentationError."""
 
     message = remove_exception_from_error_message(error_message)
@@ -223,18 +209,17 @@ def handle_syntax_error(error_message: str) -> Union[str, None]:
         return url_for_error(error)
 
 
-def handle_tab_error(error_message):
+def handle_tab_error(error_message: str) -> str:
     """Process an TabError."""
     message = remove_exception_from_error_message(error_message)
     return url_for_error(message)
 
 
-def handle_type_error(error_message):
+def handle_type_error(error_message: str) -> str:
     """Process an TypeError."""
 
     hint1 = "the first argument must be callable"
     hint2 = "not all arguments converted during string formatting"
-    message = ""
     if hint1 in error_message:
         message = "must have first callable argument"
     elif hint2 in error_message:
@@ -247,14 +232,14 @@ def handle_type_error(error_message):
     return url_for_error(message)
 
 
-def handle_zero_division_error(error_message):
+def handle_zero_division_error(error_message: str) -> str:
     """Process an ZeroDivisionError"""
 
     message = remove_exception_from_error_message(error_message)
     return url_for_error(message)
 
 
-def handle_zero_division_error_locally(error_line):
+def handle_zero_division_error_locally(error_line: int) -> str:
     """Process an ZeroDivisionError"""
     hint = HINT_MESSAGES["ZeroDivisionError"].replace("<line>", str(error_line))
     return hint
@@ -268,7 +253,7 @@ def set_pagesize(query: str, pagesize: int) -> str:
     return query + f"&pagesize={pagesize}"
 
 
-def get_query_params(error_message: str):
+def get_query_params(error_message: str) -> str:
     """Prepares the query to include necessary filters and meet URL format."""
 
     error_message_slug = slugify(error_message, separator="+")
@@ -304,10 +289,29 @@ def remove_exception_from_error_message(error_message: str) -> str:
     return error_message.split(SINGLE_SPACE_CHAR, 1)[1]
 
 
-def remove_quoted_words(error_message: str):
+def remove_quoted_words(error_message: str) -> str:
     """Removes quoted words from an error message.
     Example:
     input: "NameError: name 'a' is not defined"
     output: "NameError: name is not defined"
     """
     return re.sub(r"'.*?'\s", EMPTY_STRING, error_message)
+
+
+def define_hint_for_key_error_locally(target, missing_key, indentifiers):
+    hint = HINT_MESSAGES["KeyError"]
+    if target:
+        hint = hint.replace(
+            "<initial_error>",
+            f"Dictionary '{target}' does not have a key with value {missing_key}.",
+        )
+        hint = hint.replace("<key>", missing_key)
+    else:
+        formatted_identifiers = ", ".join(indentifiers)
+        hint = hint.replace(
+            "<initial_error>",
+            f"One of dictionaries {formatted_identifiers} does not have a key with value {missing_key}.",
+        )
+        hint = hint.replace("<key>", missing_key)
+
+    return hint
