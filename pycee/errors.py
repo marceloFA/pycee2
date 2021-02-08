@@ -13,7 +13,7 @@ from .utils import (
 )
 
 
-def handle_error(error_info: dict, cmd_args: Namespace) -> str:
+def handle_error(error_info: dict, cmd_args: Namespace) -> tuple:
     """Process the incoming error as needed and outputs three possible answer.
     output:
     query: an URL containing an stackoverflow query about the error.
