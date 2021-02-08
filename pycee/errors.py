@@ -79,7 +79,6 @@ def handle_key_error_locally(error_message: str, offending_line: str) -> str:
     """When KeyError is handled locally we remind the user that the problematic
     dict should have a key with a certain value."""
 
-    hint = HINT_MESSAGES["KeyError"]
     missing_key = error_message.split(SINGLE_SPACE_CHAR, maxsplit=1)[-1]
 
     # this first regex will match part of the pattern of a dict acess: a_dict[some_value]
@@ -96,19 +95,7 @@ def handle_key_error_locally(error_message: str, offending_line: str) -> str:
     # we cannot determine which dict originated the error.
     target = indentifiers[0] if len(set(indentifiers)) == 1 else None
 
-    if target:
-        hint = hint.replace(
-            "<initial_error>",
-            f"Dictionary '{target}' does not have a key with value {missing_key}.",
-        )
-        hint = hint.replace("<key>", missing_key)
-    else:
-        formatted_identifiers = ", ".join(indentifiers)
-        hint = hint.replace(
-            "<initial_error>",
-            f"One of dictionaries {formatted_identifiers} does not have a key with value {missing_key}.",
-        )
-        hint = hint.replace("<key>", missing_key)
+    hint = define_hint_for_key_error_locally(target, missing_key, indentifiers)
 
     return hint
 
@@ -309,3 +296,22 @@ def remove_quoted_words(error_message: str) -> str:
     output: "NameError: name is not defined"
     """
     return re.sub(r"'.*?'\s", EMPTY_STRING, error_message)
+
+
+def define_hint_for_key_error_locally(target, missing_key, indentifiers):
+    hint = HINT_MESSAGES["KeyError"]
+    if target:
+        hint = hint.replace(
+            "<initial_error>",
+            f"Dictionary '{target}' does not have a key with value {missing_key}.",
+        )
+        hint = hint.replace("<key>", missing_key)
+    else:
+        formatted_identifiers = ", ".join(indentifiers)
+        hint = hint.replace(
+            "<initial_error>",
+            f"One of dictionaries {formatted_identifiers} does not have a key with value {missing_key}.",
+        )
+        hint = hint.replace("<key>", missing_key)
+
+    return hint
