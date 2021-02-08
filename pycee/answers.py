@@ -82,33 +82,34 @@ def _ask_google(error_message: str, n_questions: int) -> Tuple[Question, None]:
 def _get_answer_content(questions: Tuple[Question]) -> Tuple[Answer, None]:
     """Retrieve the most voted and the accepted answers for each question"""
 
-    url = ANSWERS_URL + "&order=desc" + "&sort=votes"
     answers = []
 
     for question in questions:
 
-        response = requests.get(url.replace("<id>", question.id))
+        response = requests.get(ANSWERS_URL.replace("<id>", question.id))
         items = response.json()["items"]
 
-        if not items:
+        if items == []:
             continue
-
+        
         # get most voted answer
-        # first item because results are sorted by score
+        # first item because results are retrieved sorted by score
+        most_voted = items[0]
+        
         answers.append(
             Answer(
-                id=str(items[0]["answer_id"]),
-                accepted=items[0]["is_accepted"],
-                score=items[0]["score"],
-                body=items[0]["body"],
-                author=items[0]["owner"]["display_name"],
-                profile_image=items[0]["owner"].get("profile_image", None),
+                id=str(most_voted["answer_id"]),
+                accepted=most_voted["is_accepted"],
+                score=most_voted["score"],
+                body=most_voted["body"],
+                author=most_voted["owner"]["display_name"],
+                profile_image=most_voted["owner"].get("profile_image", None),
             )
         )
 
         # oftentimes the most voted answer
         # is also the accepted asnwer
-        if items[0]["is_accepted"]:
+        if most_voted["is_accepted"]:
             continue
 
         # get accepted answer, if any
