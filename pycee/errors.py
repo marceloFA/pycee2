@@ -21,7 +21,6 @@ def handle_error(error_info: dict, cmd_args: Namespace) -> str:
     TODO: pydoc_answer: A possible answer extracted from the builtin help.
     """
 
-    query = None
     pydoc_answer = None
     pycee_hint = None
     error_type = error_info["type"]
@@ -234,7 +233,6 @@ def handle_type_error(error_message):
 
     hint1 = "the first argument must be callable"
     hint2 = "not all arguments converted during string formatting"
-    message = ""
     if hint1 in error_message:
         message = "must have first callable argument"
     elif hint2 in error_message:
