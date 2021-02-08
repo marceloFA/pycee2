@@ -135,7 +135,7 @@ COMMA_CHAR = ","
 
 BASE_URL = "https://api.stackexchange.com/2.2"
 SEARCH_URL = BASE_URL + "/search?site=stackoverflow"
-ANSWERS_URL = BASE_URL + "/questions/<id>/answers?site=stackoverflow&filter=withbody"
+ANSWERS_URL = BASE_URL + "/questions/<id>/answers?site=stackoverflow" + "&filter=withbody" + "&order=desc" + "&sort=votes"
 
 # A list of all standard exeptions
 BUILTINS = dir(sys.modules["builtins"])
