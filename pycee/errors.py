@@ -129,7 +129,7 @@ def handle_name_error_locally(error_message: str) -> str:
     return hint
 
 
-def handle_name_error(error_message: str):
+def handle_name_error(error_message: str) -> str:
     """Process an NameError by removing the variable name.
     By doing this the default error can be search without interference
     of the variable name, which does not add to the problem.
@@ -143,7 +143,7 @@ def handle_name_error(error_message: str):
     return url_for_error(remove_quoted_words(error_message))
 
 
-def handle_module_error_locally(error_message):
+def handle_module_error_locally(error_message: str) -> str:
     """Ask if the user has passed a valid module name or
     if it's installable though pip"""
 
@@ -152,7 +152,7 @@ def handle_module_error_locally(error_message):
     return hint
 
 
-def handle_module_not_found_error(error_message):
+def handle_module_not_found_error(error_message: str) -> str:
     """Handling ModuleNoutFoundError is quite simple as most of well known packages
     already have questions on ModuleNotFoundError solved at stackoverflow"""
 
@@ -177,7 +177,7 @@ def handle_index_error_locally(error_message: str, error_line: int) -> str:
     return hint
 
 
-def handle_index_error(message):
+def handle_index_error(message: str) -> str:
     """Process an IndexError."""
 
     message = slugify(message, separator="+")
@@ -185,7 +185,7 @@ def handle_index_error(message):
     return url_for_error(message)
 
 
-def handle_attr_error(error_message):
+def handle_attr_error(error_message: str) -> str:
     """Process an AttributeError by directly asking StackOverflow
     about the error message."""
 
@@ -193,7 +193,7 @@ def handle_attr_error(error_message):
     return url_for_error(error)
 
 
-def handle_indentation_error(error_message):
+def handle_indentation_error(error_message: str) -> str:
     """Process an IndentationError."""
 
     message = remove_exception_from_error_message(error_message)
@@ -222,13 +222,13 @@ def handle_syntax_error(error_message: str) -> Union[str, None]:
         return url_for_error(error)
 
 
-def handle_tab_error(error_message):
+def handle_tab_error(error_message: str) -> str:
     """Process an TabError."""
     message = remove_exception_from_error_message(error_message)
     return url_for_error(message)
 
 
-def handle_type_error(error_message):
+def handle_type_error(error_message: str) -> str:
     """Process an TypeError."""
 
     hint1 = "the first argument must be callable"
@@ -245,14 +245,14 @@ def handle_type_error(error_message):
     return url_for_error(message)
 
 
-def handle_zero_division_error(error_message):
+def handle_zero_division_error(error_message: str) -> str:
     """Process an ZeroDivisionError"""
 
     message = remove_exception_from_error_message(error_message)
     return url_for_error(message)
 
 
-def handle_zero_division_error_locally(error_line):
+def handle_zero_division_error_locally(error_line: int) -> str:
     """Process an ZeroDivisionError"""
     hint = HINT_MESSAGES["ZeroDivisionError"].replace("<line>", str(error_line))
     return hint
@@ -266,7 +266,7 @@ def set_pagesize(query: str, pagesize: int) -> str:
     return query + f"&pagesize={pagesize}"
 
 
-def get_query_params(error_message: str):
+def get_query_params(error_message: str) -> str:
     """Prepares the query to include necessary filters and meet URL format."""
 
     error_message_slug = slugify(error_message, separator="+")
@@ -302,7 +302,7 @@ def remove_exception_from_error_message(error_message: str) -> str:
     return error_message.split(SINGLE_SPACE_CHAR, 1)[1]
 
 
-def remove_quoted_words(error_message: str):
+def remove_quoted_words(error_message: str) -> str:
     """Removes quoted words from an error message.
     Example:
     input: "NameError: name 'a' is not defined"
