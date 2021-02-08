@@ -1,5 +1,5 @@
 -r requirements.txt
-pytest
-httmock
-flake8
-pre-commit
+pytest==6.2.1
+httmock==1.4.0
+flake8==3.8.4
+pre-commit==2.9.3
