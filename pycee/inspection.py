@@ -2,8 +2,6 @@
 import re
 import sys
 from pprint import pprint
-from dis import get_instructions
-from collections import defaultdict
 from subprocess import Popen, PIPE
 from typing import Union
 
@@ -179,29 +177,3 @@ def get_offending_line(error_line: int, code: str) -> str:
         offending_line = code_lines[-1]
 
     return offending_line
-
-
-def get_packages(code: str) -> defaultdict:
-    """Extracts the packages that were included in the file being inspected.
-    Source for this code: https://stackoverflow.com/questions/2572582/
-    Example:
-
-    input:
-    'from collections import Counter\n
-     import kivy\n
-     from stats import median as stats_median\n'
-
-    output:
-    defaultdict(<class 'list'>,
-                {'import_name': ['collections', 'kivy', 'stats'],
-                 'import_from': ['Counter', 'median']}
-                )
-    """
-
-    instructions = get_instructions(code)
-    import_instructions = [i for i in instructions if "IMPORT" in i.opname]
-    imports = defaultdict(list)
-    for instr in import_instructions:
-        imports[instr.opname.lower()].append(instr.argval)
-
-    return imports
